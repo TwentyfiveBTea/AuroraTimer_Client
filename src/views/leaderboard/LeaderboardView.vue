@@ -1,0 +1,840 @@
+<template>
+  <div class="leaderboard-page">
+    <!-- Page Container -->
+    <div class="leaderboard-page__container">
+      <!-- Main Content -->
+      <div class="leaderboard-page__content">
+        <!-- Main Area -->
+        <main class="leaderboard-page__main">
+          <!-- Header -->
+          <header class="leaderboard-page__header">
+            <div class="leaderboard-page__header-left">
+              <h1 class="leaderboard-page__title">排行榜看板</h1>
+              <div class="leaderboard-page__divider"></div>
+              <div class="leaderboard-page__status">
+                <span class="status-dot"></span>
+                实时在线
+              </div>
+            </div>
+            
+            <div class="leaderboard-page__header-right">
+              <div class="leaderboard-page__update-info">
+                <span class="update-label">数据统计周期</span>
+                <span class="update-time">更新于 2分钟前</span>
+              </div>
+              <div class="leaderboard-page__user">
+                <span class="leaderboard-page__user-name">陈伟</span>
+                <div class="leaderboard-page__user-avatar">
+                  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmdzf6DNmSIdaXk8TJxo2toauvT9FXzdF1mn7fk4r3ETxLwFNwlXzFMVPj1wfYhE2-eLZV5TuxUZ328ErOrjHNBEDlswL64pRskdqEMXq8XRKa0-Z-Bh8XXjqE7v03LVO9-NyVWIB0gxmX-HvrXE41winaLhiUfSZnp7IdS5pvnZDvfBrVS8xK73nMb3EyW1drOH4M8XKqucLp6ZSLYPgykdla2MYK-HLNYI83VJyoinNss4X715_lyE9lWrJqkVLV_keA-NBqkbYb" alt="陈伟" />
+                </div>
+              </div>
+            </div>
+          </header>
+          
+          <!-- Leaderboard Content -->
+          <div class="leaderboard-page__board">
+            <div class="leaderboard-page__board-header">
+              <div class="leaderboard-page__board-title">
+                <h2>本周活跃排名</h2>
+                <p>基于工作室成员本周累计在线时长</p>
+              </div>
+              
+              <div class="leaderboard-page__time-toggle">
+                <button class="time-toggle-btn">上周回顾</button>
+                <button class="time-toggle-btn time-toggle-btn--active">本周实时</button>
+              </div>
+            </div>
+            
+            <!-- Table Header -->
+            <div class="leaderboard-table">
+              <div class="leaderboard-table__header">
+                <div class="leaderboard-table__cell leaderboard-table__cell--rank">排名</div>
+                <div class="leaderboard-table__cell leaderboard-table__cell--avatar">头像</div>
+                <div class="leaderboard-table__cell leaderboard-table__cell--name">成员信息</div>
+                <div class="leaderboard-table__cell leaderboard-table__cell--grade">年级</div>
+                <div class="leaderboard-table__cell leaderboard-table__cell--total">历史总计</div>
+                <div class="leaderboard-table__cell leaderboard-table__cell--week">本周时长</div>
+                <div class="leaderboard-table__cell leaderboard-table__cell--direction">方向</div>
+              </div>
+              
+<!-- Table Body -->
+              <div class="leaderboard-table__body">
+                <!-- 使用 v-for 遍历数据 -->
+                <div
+                  v-for="(item, index) in leaderboardData"
+                  :key="item.rank"
+                  class="leaderboard-table__row"
+                  :class="{
+                    'leaderboard-table__row--first': item.rank === 1
+                  }"
+                >
+                  <div class="leaderboard-table__cell leaderboard-table__cell--rank">
+                    <div v-if="item.rank === 1" class="rank-badge rank-badge--first">{{ item.rank }}</div>
+                    <span v-else class="rank-text" :class="{ 'rank-text--muted': item.rank > 3 }">{{ item.rank }}</span>
+                  </div>
+                  <div class="leaderboard-table__cell leaderboard-table__cell--avatar">
+                    <div class="avatar-wrapper" :class="{ 'avatar-wrapper--small': item.rank > 1 }">
+                      <img :src="item.avatar" :alt="item.name" />
+                    </div>
+                  </div>
+                  <div class="leaderboard-table__cell leaderboard-table__cell--name">
+                    <div class="member-info">
+                      <span class="member-name">{{ item.name }}</span>
+                      <span class="member-role" :class="{ 'member-role--muted': item.role !== '超级管理员' && item.role !== '管理员' }">{{ item.role }}</span>
+                    </div>
+                  </div>
+                  <div class="leaderboard-table__cell leaderboard-table__cell--grade">
+                    <span class="grade-badge" :class="{ 'grade-badge--muted': item.grade !== '2020级' }">{{ item.grade }}</span>
+                  </div>
+                  <div class="leaderboard-table__cell leaderboard-table__cell--total">
+                    <span class="total-hours" :class="{ 'total-hours--muted': item.rank > 1 }">{{ item.totalHours }}</span>
+                  </div>
+                  <div class="leaderboard-table__cell leaderboard-table__cell--week">
+                    <span class="week-hours" :class="{ 'week-hours--highlight': item.rank === 1 }">{{ item.weekHours }}</span>
+                  </div>
+                  <div class="leaderboard-table__cell leaderboard-table__cell--direction">
+                    <DirectionBadge :direction="item.direction" display-mode="short" />
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Footer Stats -->
+            <div class="leaderboard-page__footer">
+              <div class="footer-stats">
+                <div class="footer-stat">
+                  <span class="footer-stat__dot footer-stat__dot--primary"></span>
+                  <span>活跃总人数: 142</span>
+                </div>
+                <div class="footer-stat">
+                  <span class="footer-stat__dot footer-stat__dot--secondary"></span>
+                  <span>平均在线时长: 4h 22m</span>
+                </div>
+              </div>
+              
+              <div class="footer-progress">
+                <span class="footer-progress__label">里程碑达成: 84%</span>
+                <div class="footer-progress__bar">
+                  <div class="footer-progress__fill" style="width: 84%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref } from 'vue'
+import DirectionBadge from '@/components/DirectionBadge.vue'
+
+// Mock data
+const leaderboardData = ref([
+  {
+    rank: 1,
+    name: '陈伟',
+    role: '超级管理员',
+    grade: '2020级',
+    totalHours: '89h 00m',
+    weekHours: '07:19:42',
+    direction: '后端',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCmdzf6DNmSIdaXk8TJxo2toauvT9FXzdF1mn7fk4r3ETxLwFNwlXzFMVPj1wfYhE2-eLZV5TuxUZ328ErOrjHNBEDlswL64pRskdqEMXq8XRKa0-Z-Bh8XXjqE7v03LVO9-NyVWIB0gxmX-HvrXE41winaLhiUfSZnp7IdS5pvnZDvfBrVS8xK73nMb3EyW1drOH4M8XKqucLp6ZSLYPgykdla2MYK-HLNYI83VJyoinNss4X715_lyE9lWrJqkVLV_keA-NBqkbYb'
+  },
+  {
+    rank: 2,
+    name: '李娜',
+    role: '正式成员',
+    grade: '2021级',
+    totalHours: '62h 31m',
+    weekHours: '06:45:10',
+    direction: '网络安全（考核成员）',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD6vnRykXjDc04bHrxZD8K-Hy2TGZbl1JlNzWn9eMKL-Vsq43jtTWR2J-eIHWWkMURY1JcyX1r9NL5aly-5zUnDiIofdpOv1hjPk0QQbwGCr1xLHdoD2FoIbTYqNAG-o3zO3c_OEYPfReTQr1RayselAn9s5yWmPuzYDwVx-tEcrHF4bGcUGDysVoG2wiXrhvKqTrz_4vqktjfxp1FndkPIXVQeeuGVycqr0mK9-YaB8ST65tdIt6RK-omq6-5pM2XKbDZs4BFjNw-y'
+  },
+  {
+    rank: 3,
+    name: '王浩',
+    role: '管理员',
+    grade: '2021级',
+    totalHours: '50h 25m',
+    weekHours: '05:12:00',
+    direction: '算法',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCxQnND00LqsabenUz6UmxXZtKDWoDEAWcwUWfiqOm-M7WT31a3N7FYbis11XyCXQ93egC-z7W68EGqcaK9fgE3oecgnT3TXxA4LlA_u4zD8Lpp9xGDiD2PbsISd_dZNZgPz5uH8hwY_j9H97IonmH6GvqOReUDoSIzk2sAgm15ZQNgsegbzJQCuX7BuxDgce1Qcv0D1VNI-fbnlqnHvQSiK1iVFVW-nOwJRJvnCb-hCgoZUK8wid6R2Zy_MmmGyZZJM3QMQKNyPg8L'
+  },
+  {
+    rank: 4,
+    name: '刘洋',
+    role: '正式成员',
+    grade: '2022级',
+    totalHours: '38h 15m',
+    weekHours: '04:15:00',
+    direction: '前端',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCJNz35Kxp2Vx4KsocJFpoyr2dFVhQx_GLTpkOqjXi_P5_tZmuzR2sQ4gy1E-IAI-I9z9M2CDJjaw0228W28z6O_NuHRvysZ5ebKOCm3wC8COf8teZS90vtPEDl0ixEl52Rj1RTYAE2HtLYIb1PgNMfUcc48DjTS__ew0BCrVP1oUDwkuf0Pvw-LG5nAuQgDF7iCxfSBtVFgzOevdFVAz0M6C06K_sLuKG13A2M4Fc5E0eE7PTJfvseBcWNdXlh30NsPnf_h_9qxYnU'
+  },
+  {
+    rank: 5,
+    name: '张伟',
+    role: '正式成员',
+    grade: '2021级',
+    totalHours: '45h 10m',
+    weekHours: '04:10:15',
+    direction: '',
+    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAOzp3Nqe0AqujJw02pehft3zwlH51IlnLYzpt4smPCNaOHA9Y1kWfHOpP9lJGSrdTtflBio7lgcIWMEFgHypWlq4gIwI5FKew-vAdAd6rS58ZIAienF-QhA44JVZmG_htsGsftPf4LR0r3hC-3A7TuIFxvpURQ3rpzEFBJQiR7lxvom5TrQA8kE13IGTGfG6HDiziSDY5zbY4Dj-onwuyomTiPMyKQYANlh7bHYPdYAr5P-WsHdUdxIb62rdZFrokjcFRJyIJf_VJO'
+  }
+])
+
+const stats = ref({
+  activeMembers: 142,
+  averageHours: '4h 22m',
+  milestoneProgress: 84
+})
+</script>
+
+<style scoped>
+/* Page Container */
+.leaderboard-page {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.leaderboard-page__container {
+  display: flex;
+  flex: 1;
+  gap: var(--spacing-md);
+  padding: 0 var(--spacing-md) var(--spacing-md) 0;
+  overflow: hidden;
+}
+
+/* Window Controls */
+.window-controls {
+  position: fixed;
+  top: 16px;
+  left: 24px;
+  display: flex;
+  gap: 8px;
+  z-index: 100;
+}
+
+.window-control {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition: filter var(--transition-fast);
+}
+
+.window-control:hover {
+  filter: brightness(0.9);
+}
+
+.window-control--red {
+  background-color: #FF5F57;
+}
+
+.window-control--yellow {
+  background-color: #FEBC2E;
+}
+
+.window-control--green {
+  background-color: #28C840;
+}
+
+/* Window Brand */
+.window-brand {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  opacity: 0.4;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* Main Content */
+.leaderboard-page__content {
+  display: flex;
+  flex: 1;
+  gap: var(--spacing-md);
+  overflow: hidden;
+}
+
+/* Sidebar */
+.leaderboard-page__sidebar {
+  width: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+  max-height: 400px;
+}
+
+.sidebar-nav__top,
+.sidebar-nav__bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.sidebar-nav__item {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  color: var(--color-text-muted);
+  text-decoration: none;
+  transition: all var(--transition-fast);
+  position: relative;
+}
+
+.sidebar-nav__item:hover {
+  background-color: var(--color-bg-panel);
+  color: var(--color-primary);
+}
+
+.sidebar-nav__item--active {
+  background-color: var(--color-primary);
+  color: var(--color-bg-panel);
+  box-shadow: 0 8px 20px -4px rgba(223, 164, 115, 0.4);
+}
+
+.sidebar-nav__icon {
+  font-size: 24px;
+}
+
+/* Main Area */
+.leaderboard-page__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Header */
+.leaderboard-page__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-lg) var(--spacing-xl);
+  background-color: var(--color-bg-panel);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-soft);
+  border: 1px solid var(--color-border);
+  flex-shrink: 0;
+  margin-bottom: var(--spacing-lg);
+}
+
+.leaderboard-page__header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+}
+
+.leaderboard-page__title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--color-text-main);
+  margin: 0;
+}
+
+.leaderboard-page__divider {
+  width: 1px;
+  height: 16px;
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+.leaderboard-page__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 12px;
+  background-color: rgba(34, 197, 94, 0.1);
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #22C55E;
+  text-transform: uppercase;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background-color: #22C55E;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.leaderboard-page__header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  margin-top: -8px;
+}
+
+.leaderboard-page__update-info {
+  text-align: right;
+}
+
+.update-label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.update-time {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.leaderboard-page__user {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding-left: var(--spacing-md);
+  border-left: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.leaderboard-page__user-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+.leaderboard-page__user-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--color-bg-panel);
+  box-shadow: var(--shadow-sm);
+}
+
+.leaderboard-page__user-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Leaderboard Board */
+.leaderboard-page__board {
+  flex: 1;
+  background-color: var(--color-bg-panel);
+  border-radius: var(--radius-2xl);
+  padding: var(--spacing-xl);
+  margin-top: var(--spacing-md);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboard-page__board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: var(--spacing-lg);
+  flex-shrink: 0;
+}
+
+.leaderboard-page__board-title h2 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--color-text-main);
+  margin: 0 0 2px;
+}
+
+.leaderboard-page__board-title p {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin: 0;
+  font-weight: 500;
+}
+
+.leaderboard-page__time-toggle {
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 16px;
+  padding: 4px;
+}
+
+.time-toggle-btn {
+  padding: 6px 20px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.time-toggle-btn:hover {
+  color: var(--color-text-main);
+}
+
+.time-toggle-btn--active {
+  background-color: var(--color-primary);
+  color: var(--color-bg-panel);
+  box-shadow: 0 4px 12px rgba(223, 164, 115, 0.3);
+}
+
+/* Table */
+.leaderboard-table {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.leaderboard-table__header {
+  display: grid;
+  grid-template-columns: 0.4fr 0.5fr 0.8fr 0.4fr 2fr 2fr 1.5fr;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: var(--radius-lg);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  flex-shrink: 0;
+  align-items: center;
+  justify-items: center;
+  box-sizing: border-box;
+}
+
+.leaderboard-table__body {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-gutter: stable; /* 预留滚动条宽度 */
+}
+
+.leaderboard-table__body::-webkit-scrollbar {
+  width: 4px;
+}
+
+.leaderboard-table__body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.leaderboard-table__body::-webkit-scrollbar-thumb {
+  background-color: rgba(223, 164, 115, 0.2);
+  border-radius: 2px;
+}
+
+/* Table Cell */
+.leaderboard-table__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* 所有 cell 内容居中 */
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.leaderboard-table__header .leaderboard-table__cell {
+  font-size: 10px;
+}
+
+.leaderboard-table__cell--rank {
+  justify-content: center;
+}
+
+.leaderboard-table__cell--avatar {
+  justify-content: center;
+}
+
+.leaderboard-table__cell--name {
+  flex-direction: row; /* 改为行方向 */
+  align-items: center; /* 垂直居中 */
+  justify-content: center; /* 水平居中 */
+  gap: var(--spacing-xs); /* 添加间距 */
+}
+
+.leaderboard-table__cell--total,
+.leaderboard-table__cell--week {
+  justify-content: center;
+}
+
+.leaderboard-table__cell--direction {
+  justify-content: center;
+}
+
+.leaderboard-table__row {
+  display: grid;
+  grid-template-columns: 0.4fr 0.5fr 0.8fr 0.4fr 2fr 2fr 1.5fr;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-xl);
+  align-items: center;
+  justify-items: center;
+  border-radius: var(--radius-lg);
+  box-sizing: border-box;
+  min-height: 40px;
+}
+
+.leaderboard-table__row--first {
+  background-color: var(--color-bg-panel);
+  border: 1px solid rgba(223, 164, 115, 0.2);
+  margin-bottom: var(--spacing-xs);
+}
+
+.leaderboard-table__row--first:hover {
+  border-color: rgba(223, 164, 115, 0.4);
+}
+
+.leaderboard-table__row:not(.leaderboard-table__row--first):hover {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+/* Rank */
+.rank-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: var(--color-primary);
+  color: var(--color-bg-panel);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-style: italic;
+  font-size: 14px;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(223, 164, 115, 0.3);
+}
+
+.rank-text {
+  font-weight: 800;
+  font-style: italic;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  display: block;
+  text-align: center;
+}
+
+.rank-text--muted {
+  color: var(--color-text-muted);
+  opacity: 0.4;
+}
+
+/* Avatar */
+.avatar-wrapper {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  overflow: hidden;
+  margin: 0 auto;
+}
+
+.avatar-wrapper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-wrapper--small {
+  width: 36px;
+  height: 36px;
+}
+
+/* Member Info */
+.member-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* 居中 */
+  justify-content: center;
+  text-align: center;
+}
+
+.member-name {
+  font-weight: 700;
+  color: var(--color-text-main);
+  font-size: 14px;
+}
+
+.member-role {
+  font-size: 10px;
+  color: var(--color-primary);
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.member-role--muted {
+  color: var(--color-text-muted);
+}
+
+/* Grade */
+.grade-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}
+
+.grade-badge--muted {
+  opacity: 0.6;
+}
+
+/* Hours */
+.total-hours,
+.week-hours {
+  font-family: var(--font-family-main);
+  font-size: 12px;
+  color: var(--color-text-muted);
+  display: block;
+  text-align: right;
+}
+
+.week-hours--highlight {
+  font-weight: 800;
+  color: var(--color-primary);
+  font-size: 18px;
+}
+
+/* Footer Stats */
+.leaderboard-page__footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: var(--spacing-lg);
+  margin-top: var(--spacing-md);
+  border-top: 1px solid var(--color-border-light);
+  flex-shrink: 0;
+}
+
+.footer-stats {
+  display: flex;
+  gap: var(--spacing-xl);
+}
+
+.footer-stat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.footer-stat__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.footer-stat__dot--primary {
+  background-color: var(--color-primary);
+}
+
+.footer-stat__dot--secondary {
+  background-color: rgba(223, 164, 115, 0.4);
+}
+
+.footer-progress {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.footer-progress__label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-transform: uppercase;
+}
+
+.footer-progress__bar {
+  width: 120px;
+  height: 6px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.footer-progress__fill {
+  height: 100%;
+  background-color: var(--color-primary);
+  border-radius: 10px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .window-brand {
+    display: none;
+  }
+  
+  .leaderboard-page__sidebar {
+    display: none;
+  }
+  
+  .leaderboard-table__header,
+  .leaderboard-table__row {
+    grid-template-columns: 50px 50px 120px 100px 120px;
+    justify-items: center;
+    box-sizing: border-box;
+  }
+  
+  .leaderboard-table__cell--grade,
+  .leaderboard-table__cell--total {
+    display: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .window-controls {
+    display: none;
+  }
+  
+  .leaderboard-page__header {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+  
+  .leaderboard-page__board-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-md);
+  }
+  
+  .leaderboard-page__footer {
+    flex-direction: column;
+    gap: var(--spacing-md);
+  }
+}
+</style>
