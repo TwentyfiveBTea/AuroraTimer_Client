@@ -7,6 +7,7 @@
         <!-- Header -->
         <header class="dashboard-page__header">
           <div class="dashboard-page__header-left">
+            <img src="@/assets/images/logo.png" alt="Logo" class="dashboard-page__logo-img" />
             <h1 class="dashboard-page__title">AuroraTimer</h1>
             <div class="dashboard-page__status" :class="{ 'dashboard-page__status--afk': timerStore.isAFK }">
               <span class="status-dot" :class="{ 
@@ -375,7 +376,14 @@ onUnmounted(() => {
 .dashboard-page__header-left {
   display: flex;
   align-items: center;
-  gap: var(--spacing-lg);
+  gap: var(--spacing-md);
+}
+
+.dashboard-page__logo-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  background-color: transparent;
 }
 
 .dashboard-page__title {
