@@ -10,9 +10,7 @@
           <!-- Brand Header -->
           <div class="register-page__brand">
             <h1 class="register-page__title">
-              <span class="register-page__logo">
-                <span class="material-symbols-outlined">hourglass_bottom</span>
-              </span>
+              <img src="@/assets/images/logo.png" alt="Logo" class="register-page__logo-img" />
               AuroraTimer
             </h1>
             <p class="register-page__tagline">Aurora Lab</p>
@@ -168,9 +166,9 @@
             <div class="studio-card">
               <div class="studio-card__header">
                 <div class="studio-card__user">
-                  <img 
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuCTnHgWVpL0nI0tGD5_O0p1AGGI9Tvbnk9FEVuEnOiWEtSOdkOqs9v4P-hVYMqFQG3IKlv_RsFJkktP4Ao1i7vZmkBcoZBno7jWcXxzfCV0nAdFeUnAKEFHSNz6Y7GYJ_C6JXbyH5vFE-hELRrTbphTkLoU2qjb4XHslauyAm45_slQk6XCOH12BHOSJL2poy5EGqxkUHTazgjTNsi8uQo6fFAoWy62cod10RQ_DCQ-S-mmf5mPmmerzKDn0m9jBLuym8QGKNdwGDVl" 
-                    alt="Studio" 
+                  <img
+                    src="@/assets/images/logo.png"
+                    alt="Studio"
                     class="studio-card__avatar"
                   />
                   <div class="studio-card__info">
@@ -441,20 +439,12 @@ async function handleRegister() {
   margin: 0 0 4px;
 }
 
-.register-page__logo {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 44px;
-  height: 44px;
-  background-color: var(--color-primary);
-  border-radius: 14px;
-  color: white;
-  box-shadow: 0 4px 12px rgba(212, 163, 115, 0.3);
-}
-
-.register-page__logo .material-symbols-outlined {
-  font-size: 24px;
+.register-page__logo-img {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  background-color: var(--color-bg-panel);
+  border-radius: 10px;
 }
 
 .register-page__tagline {
@@ -734,8 +724,6 @@ async function handleRegister() {
   height: 56px;
   border-radius: 16px;
   border: none;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  background-color: #FFD7BA;
 }
 
 .studio-card__info {
