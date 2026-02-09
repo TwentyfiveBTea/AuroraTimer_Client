@@ -44,7 +44,7 @@
               </div>
               <p class="form-hint">
                 <span class="material-symbols-outlined">info</span>
-                您的密码将被重置为 123456
+                您的密码将被重置为 Aurora666
               </p>
             </div>
             
