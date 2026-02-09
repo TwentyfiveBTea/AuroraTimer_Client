@@ -12,18 +12,29 @@
           </div>
           
           <div class="notifications-page__header-actions">
-            <button class="header-action">
-              <span class="material-symbols-outlined">search</span>
-            </button>
-            <div class="header-divider"></div>
-            <button class="header-btn" @click="markAllAsRead">全部已读</button>
+            <div class="header-search">
+              <span class="material-symbols-outlined header-search__icon">search</span>
+              <input 
+                type="text" 
+                class="header-search__input" 
+                placeholder="搜索通知..." 
+                v-model="searchQuery"
+              />
+              <button 
+                v-if="searchQuery" 
+                class="header-search__clear"
+                @click="searchQuery = ''"
+              >
+                <span class="material-symbols-outlined">close</span>
+              </button>
+            </div>
           </div>
         </header>
         
         <!-- Content Area -->
         <div class="notifications-page__content">
           <!-- Notifications List -->
-          <div class="notifications-list">
+          <div class="notifications-list" v-if="Object.keys(groupedNotifications).length > 0">
             <!-- Dynamic Sections by Date -->
             <div 
               v-for="(notifications, dateKey) in groupedNotifications" 
@@ -58,23 +69,23 @@
                   <div class="notification-item__body">
                     <h3 class="notification-item__title">{{ notification.title }}</h3>
                     <p class="notification-item__message" v-html="notification.message"></p>
-                    <div class="notification-item__tags">
+                    <div class="notification-item__tags-row">
                       <span 
                         class="notification-tag" 
                         :class="`notification-tag--${notification.type}`"
                       >
                         {{ getTypeLabel(notification.type) }}
                       </span>
-                    </div>
-                    <div 
-                      v-if="notification.meetingInfo" 
-                      class="notification-item__meeting"
-                    >
-                      <span class="material-symbols-outlined">location_on</span>
-                      <span>{{ notification.meetingInfo.location }}</span>
-                      <span class="meeting-divider">|</span>
-                      <span class="material-symbols-outlined">schedule</span>
-                      <span>{{ notification.meetingInfo.time }}</span>
+                      <div 
+                        v-if="notification.meetingInfo" 
+                        class="notification-item__meeting-inline"
+                      >
+                        <span class="material-symbols-outlined">location_on</span>
+                        <span>{{ notification.meetingInfo.location }}</span>
+                        <span class="meeting-divider">|</span>
+                        <span class="material-symbols-outlined">schedule</span>
+                        <span>{{ notification.meetingInfo.time }}</span>
+                      </div>
                     </div>
                     <div 
                       v-if="notification.cleaningInfo" 
@@ -90,35 +101,20 @@
                       v-if="notification.actions" 
                       class="notification-item__actions"
                     >
-                      <button 
-                        v-for="action in notification.actions" 
-                        :key="action.label"
-                        class="notification-btn"
-                        :class="{ 'notification-btn--secondary': action.secondary }"
-                        @click="handleAction(action)"
-                      >
-                        {{ action.label }}
-                      </button>
-                      <div v-if="notification.participants" class="notification-participants">
-                        <div 
-                          v-for="(avatar, index) in notification.participants.slice(0, 3)" 
-                          :key="index"
-                          class="participant-avatar"
-                          :style="{ backgroundImage: `url(${avatar})` }"
-                        ></div>
-                        <span v-if="notification.participants.length > 3" class="participant-more">
-                          +{{ notification.participants.length - 3 }}
-                        </span>
-                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          
-          <!-- Right Sidebar - Leaderboard -->
-          <aside class="notifications-page__leaderboard">
+          <div v-else class="notifications-empty">
+            <span class="material-symbols-outlined notifications-empty__icon">search_off</span>
+            <p class="notifications-empty__text">未找到匹配的通知</p>
+            <p class="notifications-empty__hint">尝试其他关键词</p>
+          </div>
+        
+        <!-- Right Sidebar - Leaderboard -->
+        <aside class="notifications-page__leaderboard">
             <div class="leaderboard-header">
               <div class="leaderboard-header__title">
                 <span class="material-symbols-outlined leaderboard-header__icon">gavel</span>
@@ -189,6 +185,9 @@
 <script setup>
 import { ref, computed } from 'vue'
 import NotificationIcons from '@/components/NotificationIcons.vue'
+
+// 搜索关键词
+const searchQuery = ref('')
 
 // 通知数据 - 使用ISO日期时间格式
 const notifications = ref([
@@ -302,7 +301,16 @@ const notifications = ref([
 // 按日期分组通知
 const groupedNotifications = computed(() => {
   const groups = {}
-  notifications.value.forEach(notification => {
+  const filtered = notifications.value.filter(notification => {
+    if (!searchQuery.value) return true
+    const query = searchQuery.value.toLowerCase()
+    return (
+      notification.title.toLowerCase().includes(query) ||
+      notification.message.toLowerCase().includes(query) ||
+      getTypeLabel(notification.type).toLowerCase().includes(query)
+    )
+  })
+  filtered.forEach(notification => {
     const dateKey = notification.dateKey
     if (!groups[dateKey]) {
       groups[dateKey] = []
@@ -310,6 +318,11 @@ const groupedNotifications = computed(() => {
     groups[dateKey].push(notification)
   })
   return groups
+})
+
+// 是否有通知
+const hasNotifications = computed(() => {
+  return Object.keys(groupedNotifications.value).length > 0
 })
 
 // 格式化日期显示
@@ -387,15 +400,6 @@ function getTypeLabel(type) {
     'other': '其他'
   }
   return labelMap[type] || '通知'
-}
-
-// 处理操作
-function handleAction(action) {
-  console.log('Action triggered:', action.action)
-}
-
-function markAllAsRead() {
-  console.log('Mark all as read')
 }
 </script>
 
@@ -550,6 +554,63 @@ function markAllAsRead() {
 
 .header-action .material-symbols-outlined {
   font-size: 20px;
+}
+
+.header-search {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background-color: var(--color-bg-base);
+  border-radius: 12px;
+  min-width: 240px;
+  border: 1px solid var(--color-border);
+  transition: all var(--transition-fast);
+}
+
+.header-search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(223, 164, 115, 0.15);
+}
+
+.header-search__icon {
+  color: var(--color-text-muted);
+  font-size: 18px;
+}
+
+.header-search__input {
+  flex: 1;
+  border: none;
+  background: none;
+  font-size: 14px;
+  color: var(--color-text-main);
+  outline: none;
+}
+
+.header-search__input::placeholder {
+  color: var(--color-text-muted);
+}
+
+.header-search__clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  border-radius: 50%;
+  transition: all var(--transition-fast);
+}
+
+.header-search__clear:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+  color: var(--color-text-main);
+}
+
+.header-search__clear .material-symbols-outlined {
+  font-size: 16px;
 }
 
 .header-divider {
@@ -727,6 +788,28 @@ function markAllAsRead() {
   gap: var(--spacing-xs);
 }
 
+.notification-item__tags-row {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-sm);
+}
+
+.notification-item__meeting-inline {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background-color: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.notification-item__meeting-inline .material-symbols-outlined {
+  font-size: 14px;
+}
+
 .notification-tag {
   padding: 4px 8px;
   border-radius: 8px;
@@ -851,6 +934,38 @@ function markAllAsRead() {
   margin-left: -8px;
 }
 
+/* 空状态 */
+.notifications-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+  text-align: center;
+  width: 100%;
+  min-height: 200px;
+}
+
+.notifications-empty__icon {
+  font-size: 48px;
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  margin-bottom: var(--spacing-md);
+}
+
+.notifications-empty__text {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin: 0 0 var(--spacing-xs);
+}
+
+.notifications-empty__hint {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
 /* Right Sidebar - Leaderboard */
 .notifications-page__leaderboard {
   width: 320px;
@@ -901,11 +1016,11 @@ function markAllAsRead() {
 
 .leaderboard-header__badge {
   padding: 4px 8px;
-  background-color: rgba(0, 0, 0, 0.05);
+  background-color: var(--color-bg-tertiary);
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
-  color: var(--color-text-muted);
+  color: var(--color-text-secondary);
 }
 
 .leaderboard-list {
@@ -923,6 +1038,15 @@ function markAllAsRead() {
   border-radius: 12px;
   border: 1px solid var(--color-border-light);
   box-shadow: var(--shadow-sm);
+  cursor: pointer;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+}
+
+.leaderboard-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  background-color: var(--color-bg-secondary);
+  border-color: var(--color-border);
 }
 
 .leaderboard-item__avatar {
@@ -936,6 +1060,11 @@ function markAllAsRead() {
   border-radius: 50%;
   background-size: cover;
   background-position: center;
+  transition: transform var(--transition-fast);
+}
+
+.leaderboard-item:hover .leaderboard-item__avatar-image {
+  transform: scale(1.05);
 }
 
 .leaderboard-item__avatar-image--grayscale {
@@ -952,7 +1081,12 @@ function markAllAsRead() {
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid white;
+  border: 2px solid var(--color-bg-panel);
+  transition: transform var(--transition-fast);
+}
+
+.leaderboard-item:hover .leaderboard-item__status {
+  transform: scale(1.1);
 }
 
 .leaderboard-item__status .material-symbols-outlined {
@@ -987,6 +1121,11 @@ function markAllAsRead() {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color var(--transition-fast);
+}
+
+.leaderboard-item:hover .leaderboard-item__name {
+  color: var(--color-primary);
 }
 
 .leaderboard-item__hours {

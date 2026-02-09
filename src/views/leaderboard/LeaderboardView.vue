@@ -35,13 +35,22 @@
           <div class="leaderboard-page__board">
             <div class="leaderboard-page__board-header">
               <div class="leaderboard-page__board-title">
-                <h2>本周活跃排名</h2>
-                <p>基于工作室成员本周累计在线时长</p>
+                <h2>{{ weekOptions[selectedWeekIndex].label }}活跃排名</h2>
+                <p>基于工作室成员{{ weekOptions[selectedWeekIndex].label }}累计在线时长</p>
               </div>
               
-              <div class="leaderboard-page__time-toggle">
-                <button class="time-toggle-btn">上周回顾</button>
-                <button class="time-toggle-btn time-toggle-btn--active">本周实时</button>
+              <div class="leaderboard-page__time-selector">
+                <button class="time-selector-btn" @click="selectPreviousWeek" :disabled="selectedWeekIndex === weekOptions.length - 1">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/>
+                  </svg>
+                </button>
+                <span class="time-selector__label">{{ weekOptions[selectedWeekIndex].label }}</span>
+                <button class="time-selector-btn" @click="selectNextWeek" :disabled="selectedWeekIndex === 0">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+                    <path d="M8.59 16.59L10 18l6-6-6-6-1.41 1.41L13.17 12z"/>
+                  </svg>
+                </button>
               </div>
             </div>
             
@@ -129,6 +138,32 @@
 <script setup>
 import { ref } from 'vue'
 import DirectionBadge from '@/components/DirectionBadge.vue'
+
+// 周选项配置
+const weekOptions = ref([
+  { value: 'this-week', label: '本周实时' },
+  { value: 'last-week', label: '上周' },
+  { value: '2-weeks-ago', label: '上上周' },
+  { value: '3-weeks-ago', label: '上上上周' },
+  { value: '4-weeks-ago', label: '上上上上周' }
+])
+
+// 当前选中的周索引（0 = 本周）
+const selectedWeekIndex = ref(0)
+
+// 选择上一周（更早）
+function selectPreviousWeek() {
+  if (selectedWeekIndex.value < weekOptions.value.length - 1) {
+    selectedWeekIndex.value++
+  }
+}
+
+// 选择下一周（更近）
+function selectNextWeek() {
+  if (selectedWeekIndex.value > 0) {
+    selectedWeekIndex.value--
+  }
+}
 
 // Mock data
 const leaderboardData = ref([
@@ -481,7 +516,49 @@ const stats = ref({
   font-weight: 500;
 }
 
-.leaderboard-page__time-toggle {
+.leaderboard-page__time-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  background-color: var(--color-bg-base);
+  border-radius: 16px;
+  padding: 4px;
+}
+
+.time-selector-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  background-color: var(--color-bg-panel);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-fast);
+}
+
+.time-selector-btn:hover:not(:disabled) {
+  background-color: var(--color-primary);
+  color: var(--color-bg-panel);
+}
+
+.time-selector-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.time-selector__label {
+  min-width: 80px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-main);
+}
+
+/* Old toggle styles (deprecated) */
+/* .leaderboard-page__time-toggle {
   display: flex;
   align-items: center;
   background-color: rgba(0, 0, 0, 0.02);
@@ -509,7 +586,7 @@ const stats = ref({
   background-color: var(--color-primary);
   color: var(--color-bg-panel);
   box-shadow: 0 4px 12px rgba(223, 164, 115, 0.3);
-}
+} */
 
 /* Table */
 .leaderboard-table {
