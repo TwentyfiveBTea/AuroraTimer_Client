@@ -1,5 +1,12 @@
 <template>
   <div class="profile-page">
+    <!-- 头像裁剪弹窗 -->
+    <AvatarCropper
+      v-if="showAvatarCropper"
+      @close="closeAvatarCropper"
+      @confirm="handleAvatarConfirm"
+    />
+
     <!-- Main Content -->
     <div class="profile-page__content">
       <!-- Main Area -->
@@ -21,9 +28,9 @@
 
               <!-- Avatar -->
               <div class="profile-page__avatar-container">
-                <div class="profile-page__avatar">
+                <div class="profile-page__avatar" @click="openAvatarCropper">
                   <img 
-                    src="https://lh3.googleusercontent.com/aida-public/AB6AXuABV_yUC3McLtLuSxjjIG4WdcuQcMmDt5BtwVF4mKSCylby9tfA_xe4OQ9NX0tPcEm7W7KtUgFr8DvYmDylT7ATCBEY_aJwV9xAqWMLtj9DjxjiU9bUqIQDt3JQ_8R1Lkq7xpeMGG7VxfsOxA4pwV4xgVRdeEDibuteEVT_9mXfFsVWMRp0pRjVcps8-sJrQ2DhgUXNjEVSu-_HgiDLPNYsawQmKbkHnpnUslzbtcbaxjH_aeXm-7GvhPmBbdb5b-0IUUcUb32TmCD7" 
+                    :src="avatarUrl"
                     alt="User Avatar"
                     class="profile-page__avatar-img"
                   />
@@ -244,6 +251,29 @@
 
 <script setup>
 import { ref, reactive, computed } from 'vue'
+import AvatarCropper from '@/components/AvatarCropper.vue'
+
+// 头像相关状态
+const showAvatarCropper = ref(false)
+const avatarUrl = ref('https://lh3.googleusercontent.com/aida-public/AB6AXuABV_yUC3McLtLuSxjjIG4WdcuQcMmDt5BtwVF4mKSCylby9tfA_xe4OQ9NX0tPcEm7W7KtUgFr8DvYmDylT7ATCBEY_aJwV9xAqWMLtj9DjxjiU9bUqIQDt3JQ_8R1Lkq7xpeMGG7VxfsOxA4pwV4xgVRdeEDibuteEVT_9mXfFsVWMRp0pRjVcps8-sJrQ2DhgUXNjEVSu-_HgiDLPNYsawQmKbkHnpnUslzbtcbaxjH_aeXm-7GvhPmBbdb5b-0IUUcUb32TmCD7')
+
+// 打开头像裁剪弹窗
+function openAvatarCropper() {
+  showAvatarCropper.value = true
+}
+
+// 关闭头像裁剪弹窗
+function closeAvatarCropper() {
+  showAvatarCropper.value = false
+}
+
+// 处理头像确认
+function handleAvatarConfirm(croppedImage) {
+  avatarUrl.value = croppedImage
+  closeAvatarCropper()
+  // TODO: 调用 API 上传头像到后端
+  console.log('头像已更新:', croppedImage)
+}
 
 const form = reactive({
   email: '',

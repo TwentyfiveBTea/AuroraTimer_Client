@@ -394,7 +394,7 @@ const filteredMembers = computed(() => {
 })
 
 function goBack() {
-  router.back()
+  router.push('/')
 }
 
 function toggleMember(id) {

@@ -15,6 +15,7 @@ export const useAuthStore = defineStore('auth', () => {
   const userName = computed(() => user.value?.name || '用户')
   const userEmail = computed(() => user.value?.email || '')
   const userAvatar = computed(() => user.value?.avatar)
+  const userStudentId = computed(() => user.value?.studentId || '暂无学号')
   const userLevel = computed(() => user.value?.level || 1)
   const totalHours = computed(() => user.value?.totalHours || 0)
   
@@ -94,6 +95,7 @@ export const useAuthStore = defineStore('auth', () => {
         data: {
           id: 1,
           name: '测试用户',
+          studentId: '20230001',
           email: userEmail.value || 'test@example.com',
           avatar: null,
           totalHours: 365.5,
@@ -139,6 +141,7 @@ export const useAuthStore = defineStore('auth', () => {
     userName,
     userEmail,
     userAvatar,
+    userStudentId,
     userLevel,
     totalHours,
     login,

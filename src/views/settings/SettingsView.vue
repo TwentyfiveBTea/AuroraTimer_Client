@@ -87,15 +87,6 @@
                     <p class="settings-content__subtitle">{{ activeSetting === 'theme' ? '挑选你喜欢的计时器主题' : '选择你喜欢的的字体样式'
                         }}</p>
           </div>
-          
-          <div class="settings-content__user">
-            <div class="settings-content__user-info">
-              <span class="settings-content__user-name">小林工作室</span>
-              <span class="settings-content__user-role">普通会员</span>
-            </div>
-                    <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuDpKePtlcQU2iX7B1IYzEWKsXZWzaW0AMYAJuNAL-DoqmiMB4I_TsTtz2CiqIPWydOJXL32i6CFHuvsThctOMpCmXQz7QcH18nwx7FSUVftK9nkF6NYkxm2uioohZ7HX-4dxhEWnj30iTalty2l1dcTDlIwZuvt5hHHn_Yo_lcu4WfPPy9yS5DQu14U8aZtEzN7OH9knTC2cRD_DjyHbYSyjlQCPgz7crcKYBJ6UMm9AVlABa_exxNqgAOt-LT_rYW8BqpoJ0JQCoXG"
-                        alt="Avatar" class="settings-content__avatar" />
-          </div>
         </header>
         
         <div class="settings-content__body">

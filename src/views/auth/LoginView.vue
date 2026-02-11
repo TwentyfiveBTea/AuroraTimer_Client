@@ -90,9 +90,9 @@
             <div class="studio-card">
               <div class="studio-card__header">
                 <div class="studio-card__user">
-                  <img
+                  <img 
                     src="@/assets/images/logo.png"
-                    alt="Studio"
+                    alt="Studio" 
                     class="studio-card__avatar"
                   />
                   <div class="studio-card__info">

@@ -18,14 +18,14 @@
             </div>
             
             <div class="leaderboard-page__header-right">
-              <div class="leaderboard-page__update-info">
-                <span class="update-label">数据统计周期</span>
-                <span class="update-time">更新于 2分钟前</span>
-              </div>
+            
               <div class="leaderboard-page__user">
-                <span class="leaderboard-page__user-name">陈伟</span>
+                <div class="user-text">
+                  <span class="leaderboard-page__user-name">{{ authStore.userName }}</span>
+                  <span class="leaderboard-page__user-id">{{ authStore.userStudentId }}</span>
+                </div>
                 <div class="leaderboard-page__user-avatar">
-                  <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmdzf6DNmSIdaXk8TJxo2toauvT9FXzdF1mn7fk4r3ETxLwFNwlXzFMVPj1wfYhE2-eLZV5TuxUZ328ErOrjHNBEDlswL64pRskdqEMXq8XRKa0-Z-Bh8XXjqE7v03LVO9-NyVWIB0gxmX-HvrXE41winaLhiUfSZnp7IdS5pvnZDvfBrVS8xK73nMb3EyW1drOH4M8XKqucLp6ZSLYPgykdla2MYK-HLNYI83VJyoinNss4X715_lyE9lWrJqkVLV_keA-NBqkbYb" alt="陈伟" />
+                  <img :src="authStore.userAvatar || defaultAvatar" alt="User Avatar" />
                 </div>
               </div>
             </div>
@@ -122,7 +122,7 @@
               </div>
               
               <div class="footer-progress">
-                <span class="footer-progress__label">里程碑达成: 84%</span>
+                <span class="footer-progress__label">本周全部达标进度: 84%</span>
                 <div class="footer-progress__bar">
                   <div class="footer-progress__fill" style="width: 84%"></div>
                 </div>
@@ -137,7 +137,13 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth'
 import DirectionBadge from '@/components/DirectionBadge.vue'
+
+const authStore = useAuthStore()
+
+// 默认头像
+const defaultAvatar = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBKARB0_YC8RnE8NXoFzsL7c01BoXVeKA4Yl7D3yHYpjvbKXo8oEz6AP5d5eu6cxn8df-N2gmfC95N6F47iQvcjUjwCdGGM83oGRLL_bdNt42qZ4U2lV7Zz064WYecTWY9Ns-43M2cCe2hR8bysZrnubMpVWvtwiicikI6eMCSCbC_In9c4MtqOvrPMcUyG3AW5994tHKR7EoZmeUXPzTZFuNLnm2SexTU266jGT1-kZfV0ShWFvZq6CfU3cOmXoN7LOmg0nwHN4ukT'
 
 // 周选项配置
 const weekOptions = ref([
@@ -460,10 +466,21 @@ const stats = ref({
   border-left: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+.user-text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 .leaderboard-page__user-name {
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 700;
   color: var(--color-text-main);
+}
+
+.leaderboard-page__user-id {
+  font-size: 12px;
+  color: var(--color-text-muted);
 }
 
 .leaderboard-page__user-avatar {
