@@ -11,9 +11,9 @@
             <div class="leaderboard-page__header-left">
               <h1 class="leaderboard-page__title">排行榜看板</h1>
               <div class="leaderboard-page__divider"></div>
-              <div class="leaderboard-page__status">
-                <span class="status-dot"></span>
-                实时在线
+              <div class="leaderboard-page__status" :class="{ 'leaderboard-page__status--realtime': isCurrentWeek, 'leaderboard-page__status--historical': !isCurrentWeek }">
+                <span class="status-dot" :class="{ 'status-dot--realtime': isCurrentWeek, 'status-dot--historical': !isCurrentWeek }"></span>
+                {{ statusText }}
               </div>
             </div>
             
@@ -112,17 +112,13 @@
             <div class="leaderboard-page__footer">
               <div class="footer-stats">
                 <div class="footer-stat">
-                  <span class="footer-stat__dot footer-stat__dot--primary"></span>
-                  <span>活跃总人数: 142</span>
-                </div>
-                <div class="footer-stat">
                   <span class="footer-stat__dot footer-stat__dot--secondary"></span>
-                  <span>平均在线时长: 4h 22m</span>
+                  <span>{{ periodPrefix }}平均在线时长: 4h 22m</span>
                 </div>
               </div>
               
               <div class="footer-progress">
-                <span class="footer-progress__label">本周全部达标进度: 84%</span>
+                <span class="footer-progress__label">{{ periodPrefix }}全部达标进度: 84%</span>
                 <div class="footer-progress__bar">
                   <div class="footer-progress__fill" style="width: 84%"></div>
                 </div>
@@ -136,7 +132,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import DirectionBadge from '@/components/DirectionBadge.vue'
 
@@ -156,6 +152,33 @@ const weekOptions = ref([
 
 // 当前选中的周索引（0 = 本周）
 const selectedWeekIndex = ref(0)
+
+// 根据当前选中的周生成状态文字
+const statusText = computed(() => {
+  const labels = {
+    0: '本周',
+    1: '上周',
+    2: '上上周',
+    3: '上上上周',
+    4: '上上上上周'
+  }
+  return labels[selectedWeekIndex.value] || '本周'
+})
+
+// 判断是否是本周（用于样式控制）
+const isCurrentWeek = computed(() => selectedWeekIndex.value === 0)
+
+// 根据当前选中的周生成周期前缀
+const periodPrefix = computed(() => {
+  const prefixes = {
+    0: '本周',
+    1: '上周',
+    2: '上上周',
+    3: '上上上周',
+    4: '上上上上周'
+  }
+  return prefixes[selectedWeekIndex.value] || '本周'
+})
 
 // 选择上一周（更早）
 function selectPreviousWeek() {
@@ -408,20 +431,35 @@ const stats = ref({
   align-items: center;
   gap: 6px;
   padding: 2px 12px;
-  background-color: rgba(34, 197, 94, 0.1);
   border-radius: 20px;
   font-size: 10px;
   font-weight: 700;
-  color: #22C55E;
   text-transform: uppercase;
+}
+
+.leaderboard-page__status--realtime {
+  background-color: rgba(34, 197, 94, 0.1);
+  color: #22C55E;
+}
+
+.leaderboard-page__status--historical {
+  background-color: rgba(234, 179, 8, 0.1);
+  color: #EAB308;
 }
 
 .status-dot {
   width: 6px;
   height: 6px;
-  background-color: #22C55E;
   border-radius: 50%;
+}
+
+.status-dot--realtime {
+  background-color: #22C55E;
   animation: pulse 2s infinite;
+}
+
+.status-dot--historical {
+  background-color: #EAB308;
 }
 
 @keyframes pulse {
