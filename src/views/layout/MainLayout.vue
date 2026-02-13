@@ -25,6 +25,19 @@
       </button>
     </div>
     
+    <!-- 消息对话框 -->
+    <MessageDialog
+      v-model:visible="dialogVisible"
+      :type="dialogType"
+      :title="dialogTitle"
+      :message="dialogMessage"
+      :confirm-text="dialogConfirmText"
+      :cancel-text="dialogCancelText"
+      :show-cancel="dialogShowCancel"
+      @confirm="handleDialogConfirm"
+      @cancel="handleDialogCancel"
+    />
+    
     <!-- Main Layout Content -->
     <div class="main-layout__container">
       <!-- Narrow Sidebar -->
@@ -52,16 +65,48 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import BaseSidebar from '@/components/BaseSidebar.vue'
+import MessageDialog from '@/components/MessageDialog.vue'
 import { useThemeStore } from '@/stores/theme'
+import { dialogState, handleConfirm, handleCancel } from '@/composables/useMessage'
 
 const route = useRoute()
 const themeStore = useThemeStore()
 const sidebarCollapsed = ref(false)
 const isElectron = ref(false)
 const isFullscreen = ref(false)
+
+// 对话框状态
+const dialogVisible = ref(false)
+const dialogType = ref('info')
+const dialogTitle = ref('')
+const dialogMessage = ref('')
+const dialogConfirmText = ref('确定')
+const dialogCancelText = ref('取消')
+const dialogShowCancel = ref(false)
+
+// 监听 dialogState 变化，更新对话框
+watch(() => dialogState.visible, (newVal) => {
+  dialogVisible.value = newVal
+  dialogType.value = dialogState.type
+  dialogTitle.value = dialogState.title
+  dialogMessage.value = dialogState.message
+  dialogConfirmText.value = dialogState.confirmText
+  dialogCancelText.value = dialogState.cancelText
+  dialogShowCancel.value = dialogState.showCancel
+})
+
+// 处理对话框确认
+function handleDialogConfirm() {
+  handleConfirm()
+}
+
+// 处理对话框取消
+function handleDialogCancel() {
+  handleCancel()
+}
 
 // 根据路由 meta 信息判断是否隐藏侧边栏
 const hideSidebar = computed(() => {

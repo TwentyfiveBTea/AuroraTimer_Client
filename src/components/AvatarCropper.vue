@@ -45,7 +45,14 @@
               />
               <!-- 裁剪遮罩 -->
               <div class="avatar-cropper__crop-overlay">
-                <div class="avatar-cropper__crop-circle" :style="cropCircleStyle">
+                <div 
+                  class="avatar-cropper__crop-circle" 
+                  :style="cropCircleStyle"
+                  @mousedown="startCropDrag"
+                  @mousemove="handleCropDrag"
+                  @mouseup="stopCropDrag"
+                  @mouseleave="stopCropDrag"
+                >
                   <div class="avatar-cropper__crop-lines">
                     <div class="avatar-cropper__crop-line avatar-cropper__crop-line--h"></div>
                     <div class="avatar-cropper__crop-line avatar-cropper__crop-line--v"></div>
@@ -100,17 +107,38 @@
                 <span class="material-symbols-outlined avatar-cropper__zoom-icon">zoom_in</span>
               </div>
             </div>
+            
+            <!-- 大小调节 -->
+            <div class="avatar-cropper__size-section">
+              <p class="avatar-cropper__size-label">头像大小</p>
+              <div class="avatar-cropper__size-controls">
+                <span class="material-symbols-outlined avatar-cropper__size-icon">remove_circle</span>
+                <input
+                  type="range"
+                  v-model="cropSize"
+                  :min="minCropSize"
+                  :max="maxCropSize"
+                  class="avatar-cropper__size-slider"
+                />
+                <span class="material-symbols-outlined avatar-cropper__size-icon">add_circle</span>
+              </div>
+            </div>
 
-            <!-- 操作按钮 -->
-            <div class="avatar-cropper__actions">
-              <button class="avatar-cropper__btn avatar-cropper__btn--secondary" @click="handleReset">
-                <span class="material-symbols-outlined">refresh</span>
-                重置
-              </button>
-              <button class="avatar-cropper__btn avatar-cropper__btn--secondary" @click="handleReupload">
-                <span class="material-symbols-outlined">upload_file</span>
-                重新上传
-              </button>
+            <!-- 缩放图片 -->
+            <div class="avatar-cropper__zoom-section">
+              <p class="avatar-cropper__zoom-label">图片缩放</p>
+              <div class="avatar-cropper__zoom-controls">
+                <span class="material-symbols-outlined avatar-cropper__zoom-icon">zoom_out</span>
+                <input
+                  type="range"
+                  v-model="zoomLevel"
+                  :min="minZoom"
+                  :max="maxZoom"
+                  step="0.1"
+                  class="avatar-cropper__zoom-slider"
+                />
+                <span class="material-symbols-outlined avatar-cropper__zoom-icon">zoom_in</span>
+              </div>
             </div>
           </div>
         </div>
@@ -119,6 +147,10 @@
         <div v-if="imageSrc" class="avatar-cropper__footer">
           <button class="avatar-cropper__btn avatar-cropper__btn--secondary" @click="handleCancel">
             取消
+          </button>
+          <button class="avatar-cropper__btn avatar-cropper__btn--secondary" @click="handleReset">
+            <span class="material-symbols-outlined">refresh</span>
+            重置
           </button>
           <button class="avatar-cropper__btn avatar-cropper__btn--primary" @click="handleConfirm">
             <span class="material-symbols-outlined">check</span>
@@ -147,19 +179,31 @@ const imagePosition = ref({ x: 0, y: 0 })
 const isDragging = ref(false)
 const dragStart = ref({ x: 0, y: 0 })
 
+// 裁剪框位置（相对于wrapper中心）
+const cropPosition = ref({ x: 0, y: 0 })
+const isCropDragging = ref(false)
+const cropDragStart = ref({ x: 0, y: 0 })
+
 // 裁剪参数
 const cropSize = ref(150) // 裁剪框大小（像素）
 const zoomLevel = ref(1)
 const minCropSize = 80
-const maxCropSize = 200
+const maxCropSize = ref(200) // 动态计算，不能超过图片尺寸
 const minZoom = 0.5
 const maxZoom = 3
 
+// 图片实际尺寸（用于限制裁剪框大小）
+const imageNaturalSize = ref({ width: 0, height: 0 })
+
 // 计算属性
-const cropCircleStyle = computed(() => ({
-  width: `${cropSize.value}px`,
-  height: `${cropSize.value}px`
-}))
+const cropCircleStyle = computed(() => {
+  const size = cropSize.value * zoomLevel.value
+  return {
+    width: `${size}px`,
+    height: `${size}px`,
+    transform: `translate(calc(-50% + ${cropPosition.value.x}px), calc(-50% + ${cropPosition.value.y}px))`
+  }
+})
 
 // 图片裁剪后的预览图
 const croppedImage = computed(() => {
@@ -202,8 +246,8 @@ function generateCroppedImage() {
   const imgTopInWrapper = imgRect.top - wrapperRect.top
 
   // 计算wrapper中心相对于图片左上角的位置
-  const relativeX = wrapperCenterX - imgLeftInWrapper
-  const relativeY = wrapperCenterY - imgTopInWrapper
+  const relativeX = wrapperCenterX - imgLeftInWrapper + cropPosition.value.x
+  const relativeY = wrapperCenterY - imgTopInWrapper + cropPosition.value.y
 
   // 缩放因子（显示尺寸 / 原始尺寸）
   const scaleX = img.naturalWidth / displayedWidth
@@ -260,6 +304,24 @@ function handleImageLoad(event) {
   const img = event.target
   const wrapper = canvasWrapper.value
   if (!wrapper || !img) return
+  
+  // 保存图片原始尺寸，用于限制裁剪框大小
+  imageNaturalSize.value = {
+    width: img.naturalWidth,
+    height: img.naturalHeight
+  }
+  
+  // 根据图片尺寸计算最大裁剪框大小
+  // 裁剪框不能超过图片的较短边
+  const minSide = Math.min(img.naturalWidth, img.naturalHeight)
+  // 允许的最大裁剪框尺寸（考虑一定的边距）
+  const maxAllowed = Math.floor(minSide * 0.9)
+  maxCropSize.value = Math.max(minCropSize, maxAllowed)
+  
+  // 如果当前裁剪框超过最大值，则调整
+  if (cropSize.value > maxCropSize.value) {
+    cropSize.value = maxCropSize.value
+  }
   
   // 获取容器和图片的尺寸
   const wrapperRect = wrapper.getBoundingClientRect()
@@ -338,6 +400,60 @@ function stopDrag() {
   isDragging.value = false
 }
 
+// 裁剪框拖拽相关
+function startCropDrag(event) {
+  event.preventDefault()
+  event.stopPropagation()
+  isCropDragging.value = true
+  cropDragStart.value = {
+    x: event.clientX - cropPosition.value.x,
+    y: event.clientY - cropPosition.value.y
+  }
+}
+
+function handleCropDrag(event) {
+  if (!isCropDragging.value) return
+  
+  const wrapper = canvasWrapper.value
+  if (!wrapper) return
+  
+  const wrapperRect = wrapper.getBoundingClientRect()
+  const wrapperCenterX = wrapperRect.width / 2
+  const wrapperCenterY = wrapperRect.height / 2
+  
+  const newX = event.clientX - cropDragStart.value.x
+  const newY = event.clientY - cropDragStart.value.y
+  
+  // 限制裁剪框在图片范围内
+  const img = imageRef.value
+  if (img) {
+    const imgRect = img.getBoundingClientRect()
+    const imgLeftInWrapper = imgRect.left - wrapperRect.left
+    const imgTopInWrapper = imgRect.top - wrapperRect.top
+    
+    // 计算图片边缘相对于wrapper中心的位置
+    const imgLeft = imgLeftInWrapper - wrapperCenterX
+    const imgTop = imgTopInWrapper - wrapperCenterY
+    const imgRight = imgLeft + imgRect.width
+    const imgBottom = imgTop + imgRect.height
+    
+    const cropHalfSize = (cropSize.value * zoomLevel.value) / 2
+    
+    // 限制裁剪框范围
+    const maxX = Math.min(cropHalfSize - 10, -imgLeft + cropHalfSize - 10)
+    const maxY = Math.min(cropHalfSize - 10, -imgTop + cropHalfSize - 10)
+    
+    cropPosition.value = {
+      x: Math.max(-maxX, Math.min(maxX, newX)),
+      y: Math.max(-maxY, Math.min(maxY, newY))
+    }
+  }
+}
+
+function stopCropDrag() {
+  isCropDragging.value = false
+}
+
 // 重新上传
 function handleReupload() {
   fileInput.value?.click()
@@ -366,6 +482,11 @@ watch(zoomLevel, () => {
   if (imageRef.value) {
     handleImageLoad({ target: imageRef.value })
   }
+})
+
+// 监听裁剪框大小变化
+watch(cropSize, () => {
+  // cropSize 变化会自动触发 croppedImage computed 更新
 })
 </script>
 
@@ -531,10 +652,16 @@ watch(zoomLevel, () => {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
   border: 2px solid white;
   box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
   border-radius: 50%;
+  cursor: move;
+  pointer-events: auto;
+  transition: transform 0.05s ease-out;
+}
+
+.avatar-cropper__crop-circle--square {
+  border-radius: 8px;
 }
 
 .avatar-cropper__crop-lines {

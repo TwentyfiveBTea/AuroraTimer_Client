@@ -104,6 +104,7 @@
 [data-theme="dark"] {
   --color-bg-base: #1A1A1A;
   --color-bg-panel: #252525;
+  --color-bg-card: #2A2A2A;
   --color-text-main: #F5F5F5;
   --color-text-muted: #888888;
   --color-bg-secondary: #2A2A2A;
@@ -133,6 +134,7 @@
   --color-primary-dark: #C08A5E;
   --color-bg-base: #F3F0E6;
   --color-bg-panel: #FEFCF9;
+  --color-bg-card: #FFFFFF;
   /* 大中小环颜色 - 浅色系 */
   --color-ring-big-start: #E8B88A;
   --color-ring-big-end: #D4A574;
@@ -148,6 +150,7 @@
   --color-primary-dark: #222222;
   --color-bg-base: #F8F9FA;
   --color-bg-panel: #FFFFFF;
+  --color-bg-card: #FFFFFF;
   --color-text-main: #333333;
   --color-text-muted: #888888;
   --color-text-primary: #333333;
@@ -168,6 +171,7 @@
   --color-primary-dark: #8FA072;
   --color-bg-base: #344E41;
   --color-bg-panel: #3D5A4C;
+  --color-bg-card: #435D4C;
   --color-text-main: #DAD7CD;
   --color-text-muted: #A8B8A0;
   --color-text-primary: #DAD7CD;
@@ -190,6 +194,7 @@
   --color-primary-dark: #D65A68;
   --color-bg-base: #FAE7F3;
   --color-bg-panel: #FFFFFF;
+  --color-bg-card: #FFFFFF;
   --color-text-main: #632C3B;
   --color-text-muted: #B090A0;
   --color-text-primary: #632C3B;
@@ -212,6 +217,7 @@
   --color-primary-dark: #4DB877;
   --color-bg-base: #FFFFFF;
   --color-bg-panel: #F8FAFC;
+  --color-bg-card: #FFFFFF;
   --color-text-main: #333C4D;
   --color-text-muted: #789090;
   --color-text-primary: #333C4D;
@@ -232,6 +238,7 @@
   --color-primary-dark: #E0935C;
   --color-bg-base: #2A263D;
   --color-bg-panel: #3D3548;
+  --color-bg-card: #453D52;
   --color-text-main: #E8E0D8;
   --color-text-muted: #B8A898;
   --color-text-primary: #E8E0D8;
@@ -254,6 +261,7 @@
   --color-primary-dark: #7D5A96;
   --color-bg-base: #EBC6DC;
   --color-bg-panel: #F5E6F5;
+  --color-bg-card: #FFFFFF;
   --color-text-main: #4A3F35;
   --color-text-muted: #9A8899;
   --color-text-primary: #4A3F35;
@@ -276,6 +284,7 @@
   --color-primary-dark: #D05F35;
   --color-bg-base: #FBC697;
   --color-bg-panel: #F5E6DE;
+  --color-bg-card: #FFFFFF;
   --color-text-main: #4A3F35;
   --color-text-muted: #8A7A8A;
   --color-text-primary: #4A3F35;
@@ -298,6 +307,7 @@
   --color-primary-dark: #2A4585;
   --color-bg-base: #8AA3BC;
   --color-bg-panel: #C8D8E8;
+  --color-bg-card: #FFFFFF;
   --color-text-main: #333C4D;
   --color-text-muted: #6A7A7A;
   --color-text-primary: #333C4D;

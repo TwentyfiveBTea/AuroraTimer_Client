@@ -30,7 +30,7 @@
               <div class="profile-page__avatar-container">
                 <div class="profile-page__avatar" @click="openAvatarCropper">
                   <img 
-                    :src="avatarUrl"
+                    :src="avatarUrl || defaultAvatar"
                     alt="User Avatar"
                     class="profile-page__avatar-img"
                   />
@@ -44,10 +44,10 @@
               </div>
               
               <!-- Name -->
-              <h3 class="profile-page__name">张三</h3>
+              <h3 class="profile-page__name">{{ userInfo.name || '用户' }}</h3>
               
               <!-- Direction -->
-              <p class="profile-page__direction">前端开发</p>
+              <p class="profile-page__direction">{{ userInfo.direction || '未设置方向' }}</p>
               
               <!-- Divider -->
               <div class="profile-page__divider"></div>
@@ -56,15 +56,15 @@
               <div class="profile-page__info-list">
                 <div class="profile-page__info-item">
                   <span class="profile-page__info-label">学号</span>
-                  <span class="profile-page__info-value">20230001</span>
+                  <span class="profile-page__info-value">{{ userInfo.studentId || '暂无' }}</span>
                 </div>
                 <div class="profile-page__info-item">
                   <span class="profile-page__info-label">职位</span>
-                  <span class="profile-page__info-value">成员</span>
+                  <span class="profile-page__info-value">{{ userInfo.role || '成员' }}</span>
                 </div>
                 <div class="profile-page__info-item">
                   <span class="profile-page__info-label">注册时间</span>
-                  <span class="profile-page__info-value">2023-01-15</span>
+                  <span class="profile-page__info-value">{{ userInfo.registerTime || '暂无' }}</span>
                 </div>
               </div>
             </div>
@@ -235,6 +235,7 @@
                   <button 
                     class="profile-page__btn profile-page__btn--primary"
                     :disabled="!isFormValid"
+                    @click="handleSave"
                   >
                     <span class="material-symbols-outlined btn-icon">save</span>
                     保存修改
@@ -250,12 +251,67 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import AvatarCropper from '@/components/AvatarCropper.vue'
+import { useAuthStore } from '@/stores/auth'
+import { showError, showWarning, showSuccess } from '@/composables/useMessage'
+
+// 获取 authStore
+const authStore = useAuthStore()
 
 // 头像相关状态
 const showAvatarCropper = ref(false)
-const avatarUrl = ref('https://lh3.googleusercontent.com/aida-public/AB6AXuABV_yUC3McLtLuSxjjIG4WdcuQcMmDt5BtwVF4mKSCylby9tfA_xe4OQ9NX0tPcEm7W7KtUgFr8DvYmDylT7ATCBEY_aJwV9xAqWMLtj9DjxjiU9bUqIQDt3JQ_8R1Lkq7xpeMGG7VxfsOxA4pwV4xgVRdeEDibuteEVT_9mXfFsVWMRp0pRjVcps8-sJrQ2DhgUXNjEVSu-_HgiDLPNYsawQmKbkHnpnUslzbtcbaxjH_aeXm-7GvhPmBbdb5b-0IUUcUb32TmCD7')
+const avatarUrl = ref('')
+
+// 默认头像
+const defaultAvatar = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAiIGhlaWdodD0iMTAwIiB2aWV3Qm94PSIwIDAgMTAwIDEwMCI+PHJlY3Qgd2lkdGg9IjEwMCIgaGVpZ2h0PSIxMDAiIGZpbGw9IiNlZWUiLz48Y2lyY2xlIGN4PSI1MCIgY3k9IjM1IiByPSIyMCIgZmlsbD0iI2RkZCIvPjxwYXRoIGQ9Ik0zNSA3NSBDMzUgNTUuNDEzNTM1IDUxLjU4NjY4MSA1MCA1MCA1MCBDNDQuNjEzMzY5IDUwIDQwIDU0LjYxMzM2OSA0MCA2MCBMNDAgODAgQzQwIDk1LjI4NjY4MSA1Mi4xMTMzNjkgMTAwIDcwIDEwMCBDODcuODg2MzMxIDEwMCAxMDAgOTUuMjg2NjgxIDEwMCA4MCBMMTAwIDYwIEMxMDAgNTQuNjEzMzY5IDk1LjU4NjY4MSA1MCA5MCA1MCBDODguNDEzMzY5IDUwIDg1IDU1LjQxMzM1NSA4NSA2MCBDODUgNjQuNTg2NjgxIDg3LjU4NjY4MSA2OSA5MCA2OSBDOTIuNjEzNjgxIDY5IDk1IDY0LjU4NjY4MSA5NSA2MCBDOTUgNTEuNTg2NjgxIDkyLjYxMzY4MSA0OSA5MCA0OSBDODIuNTg2NjgxIDQ5IDc1IDU1LjQxMzM1NSA3NSA2MCBDNzUgNjQuNTg2NjgxIDc3LjU4NjY4MSA2OSA4MCA2OSBDODIuNTg2NjgxIDY5IDg1IDY0LjU4NjY4MSA4NSA2MCBDODUgNTEuNTg2NjgxIDgyLjU4NjY4MSA0OSA4MCA0OSBDNzIuNTg2NjgxIDQ5IDY1IDU1LjQxMzM1NSA2NSA2MCBDNjUgNjQuNTg2NjgxIDY3LjU4NjY4MSA2OSA3MCA2OSBDNzIuNTg2NjgxIDY5IDc1IDY0LjU4NjY4MSA3NSA2MCBDNzUgNTEuNTg2NjgxIDcyLjU4NjY4MSA0OSA3MCA0OSBDNjIuNTg2NjgxIDQ5IDU1IDU1LjQxMzM1NSA1NSA2MCBDNTUgNjQuNTg2NjgxIDU3LjU4NjY4MSA2OSA2MCA2OSBDNjIuNTg2NjgxIDY5IDY1IDY0LjU4NjY4MSA2NSA2MCBDNjUgNTEuNTg2NjgxIDYyLjU4NjY4MSA0OSA2MCA0OSBDNTIuNTg2NjgxIDQ5IDQ1IDU1LjQxMzM1NSA0NSA2MCBDNDUgNjQuNTg2NjgxIDQ3LjU4NjY4MSA2OSA1MCA2OSBDNTIuNTg2NjgxIDY5IDU1IDY0LjU4NjY4MSA1NSA2MCBDNTUgNTEuNTg2NjgxIDUyLjU4NjY4MSA0OSA1MCA0OSBDNDIuNTg2NjgxIDQ5IDM1IDU1LjQxMzM1NSAzNSA2MCBaIiBmaWxsPSIjY2NjIi8+PC9zdmc+'
+
+// 用户信息
+const userInfo = reactive({
+  name: '',
+  studentId: '',
+  direction: '',
+  position: '',
+  email: '',
+  registerTime: '',
+  role: ''
+})
+
+// 加载用户信息
+async function loadUserInfo() {
+  if (!authStore.user) {
+    // 如果 store 中没有用户信息，先获取
+    await authStore.fetchUser()
+  }
+  
+  if (authStore.user) {
+    const user = authStore.user
+    avatarUrl.value = user.avatar || ''
+    userInfo.name = user.name || ''
+    userInfo.studentId = user.userId || user.studentId || ''
+    userInfo.direction = user.direction || ''
+    userInfo.position = user.position || ''
+    userInfo.email = user.email || ''
+    userInfo.registerTime = user.createTime ? formatDate(user.createTime) : ''
+    userInfo.role = getPositionLabel(user.position) || '成员'
+    
+    // 填充表单
+    form.email = user.email || ''
+    form.direction = user.direction || ''
+    form.position = user.position || ''
+  }
+}
+
+// 格式化日期
+function formatDate(dateString) {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  return date.toLocaleDateString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  }).replace(/\//g, '-')
+}
 
 // 打开头像裁剪弹窗
 function openAvatarCropper() {
@@ -268,12 +324,35 @@ function closeAvatarCropper() {
 }
 
 // 处理头像确认
-function handleAvatarConfirm(croppedImage) {
-  avatarUrl.value = croppedImage
+async function handleAvatarConfirm(croppedImage) {
+  try {
+    // 将 base64 转换为 File 对象
+    const response = await fetch(croppedImage)
+    const blob = await response.blob()
+    const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' })
+    
+    // 调用 API 上传头像
+    const result = await authStore.uploadAvatar(file)
+    
+    if (result.success) {
+      // 更新本地头像显示
+      avatarUrl.value = authStore.user?.avatar || croppedImage
+      showSuccess('头像上传成功')
+    } else {
+      showWarning(result.message || '头像上传失败')
+    }
+  } catch (error) {
+    console.error('头像上传失败:', error)
+    showError('头像上传失败')
+  }
+  
   closeAvatarCropper()
-  // TODO: 调用 API 上传头像到后端
-  console.log('头像已更新:', croppedImage)
 }
+
+// 页面加载时获取用户信息
+onMounted(() => {
+  loadUserInfo()
+})
 
 const form = reactive({
   email: '',
@@ -306,28 +385,34 @@ const toggleShowPassword = (field) => {
 }
 
 const directionOptions = [
-  { value: 'frontend', label: '前端' },
-  { value: 'backend', label: '后端' },
-  { value: 'design', label: '设计' },
-  { value: 'algorithm', label: '算法' },
-  { value: 'embedded', label: '嵌入式' },
-  { value: 'data_analysis', label: '数据分析' },
-  { value: 'cybersecurity', label: '网络安全' }
+  { value: '前端', label: '前端' },
+  { value: '后端', label: '后端' },
+  { value: '设计', label: '设计' },
+  { value: '算法', label: '算法' },
+  { value: '嵌入式', label: '嵌入式' },
+  { value: '数据分析', label: '数据分析' },
+  { value: '网络安全', label: '网络安全' }
 ]
 
 const positionOptions = [
-  { value: 'leader', label: '负责人' },
-  { value: 'deputy_leader', label: '副负责人' },
-  { value: 'frontend_leader', label: '前端组长' },
-  { value: 'backend_leader', label: '后端组长' },
-  { value: 'design_leader', label: '设计组长' },
-  { value: 'algorithm_leader', label: '算法组长' },
-  { value: 'embedded_leader', label: '嵌入式组长' },
-  { value: 'data_analysis_leader', label: '数据分析组长' },
-  { value: 'cybersecurity_leader', label: '网络安全组长' },
-  { value: 'member', label: '正式成员' },
-  { value: 'probation', label: '考核成员' }
+  { value: '负责人', label: '负责人' },
+  { value: '副负责人', label: '副负责人' },
+  { value: '前端组长', label: '前端组长' },
+  { value: '后端组长', label: '后端组长' },
+  { value: '设计组长', label: '设计组长' },
+  { value: '算法组长', label: '算法组长' },
+  { value: '嵌入式组长', label: '嵌入式组长' },
+  { value: '数据分析组长', label: '数据分析组长' },
+  { value: '网络安全组长', label: '网络安全组长' },
+  { value: '正式成员', label: '正式成员' },
+  { value: '考核成员', label: '考核成员' }
 ]
+
+// 将英文职位转换为中文
+function getPositionLabel(positionValue) {
+  const option = positionOptions.find(opt => opt.value === positionValue)
+  return option ? option.label : '成员'
+}
 
 // Email validation
 function validateEmail() {
@@ -368,19 +453,57 @@ function validateConfirmPassword() {
 
 // Form validation status
 const isFormValid = computed(() => {
-  const emailValid = form.email && !errors.email
-  const directionValid = !!form.direction
-  const passwordValid = !form.newPassword || 
-    (form.newPassword.length >= 8 && 
-     /[a-zA-Z]/.test(form.newPassword) && 
-     /[0-9]/.test(form.newPassword))
-  const confirmValid = !form.newPassword || form.newPassword === form.confirmPassword
+  // 邮箱验证：只有填写了才验证
+  const emailValid = !form.email || !errors.email
   
+  // 方向验证：只要有值就行
+  const directionValid = !!form.direction
+  
+  // 密码验证：只有填写了新密码才验证
+  let passwordValid = true
+  let confirmValid = true
+  
+  if (form.newPassword) {
+    passwordValid = form.newPassword.length >= 8 && 
+     /[a-zA-Z]/.test(form.newPassword) && 
+     /[0-9]/.test(form.newPassword)
+    confirmValid = form.newPassword === form.confirmPassword
+  }
+  
+  // 必须填写邮箱和方向，且密码验证通过
   return emailValid && directionValid && passwordValid && confirmValid
 })
 
-function handleSave() {
-  console.log('Saving profile:', form)
+async function handleSave() {
+  if (!authStore.user?.userId) {
+    showWarning('无法获取用户信息')
+    return
+  }
+  
+  try {
+    const result = await authStore.updateProfile({
+      direction: form.direction || authStore.user.direction,
+      position: form.position || authStore.user.position,
+      email: form.email || authStore.user.email,
+      currentPassword: form.currentPassword || undefined,
+      newPassword: form.newPassword || undefined
+    })
+    
+    if (result.success) {
+      showSuccess('保存成功')
+      // 清空密码字段
+      form.currentPassword = ''
+      form.newPassword = ''
+      form.confirmPassword = ''
+      // 刷新页面以更新显示的数据
+      window.location.reload()
+    } else if (result.message) {
+      showWarning(result.message)
+    }
+  } catch (error) {
+    console.error('保存错误:', error)
+    showError('保存失败，请检查网络连接')
+  }
 }
 </script>
 

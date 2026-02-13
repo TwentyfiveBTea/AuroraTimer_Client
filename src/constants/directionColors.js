@@ -64,24 +64,24 @@ export const DIRECTION_COLORS = {
 
 // 方向选项列表（用于下拉框等场景）
 export const DIRECTION_OPTIONS = [
-  { value: 'frontend', label: '前端' },
-  { value: 'backend', label: '后端' },
-  { value: 'design', label: '设计' },
-  { value: 'algorithm', label: '算法' },
-  { value: 'embedded', label: '嵌入式' },
-  { value: 'dataAnalysis', label: '数据分析' },
-  { value: 'cybersecurity', label: '网络安全' }
+  { value: '前端', label: '前端' },
+  { value: '后端', label: '后端' },
+  { value: '设计', label: '设计' },
+  { value: '算法', label: '算法' },
+  { value: '嵌入式', label: '嵌入式' },
+  { value: '数据分析', label: '数据分析' },
+  { value: '网络安全', label: '网络安全' }
 ]
 
 // 简化的方向列表
 export const DIRECTION_LIST = [
-  { value: 'frontend', label: '前端' },
-  { value: 'backend', label: '后端' },
-  { value: 'design', label: '设计' },
-  { value: 'algorithm', label: '算法' },
-  { value: 'embedded', label: '嵌入式' },
-  { value: 'dataAnalysis', label: '数据分析' },
-  { value: 'cybersecurity', label: '网络安全' }
+  { value: '前端', label: '前端' },
+  { value: '后端', label: '后端' },
+  { value: '设计', label: '设计' },
+  { value: '算法', label: '算法' },
+  { value: '嵌入式', label: '嵌入式' },
+  { value: '数据分析', label: '数据分析' },
+  { value: '网络安全', label: '网络安全' }
 ]
 
 /**
