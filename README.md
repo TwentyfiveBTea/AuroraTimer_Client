@@ -1,0 +1,129 @@
+# Aurora Timer ⏱️
+
+> Aurora Studio Community - 工时管理与协作平台
+
+[![Vue](https://img.shields.io/badge/Vue-3.4+-42b883?style=flat&logo=vue.js)](https://vuejs.org)
+[![Electron](https://img.shields.io/badge/Electron-28.3-47848f?style=flat&logo=electron)](https://www.electronjs.org)
+[![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=flat&logo=vite)](https://vitejs.dev)
+[![Pinia](https://img.shields.io/badge/Pinia-2.1-ffd859?style=flat&logo=pinia)](https://pinia.vuejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-3178c6?style=flat&logo=typescript)](https://www.typescriptlang.org)
+[![SCSS](https://img.shields.io/badge/SCSS-1.69-cc6699?style=flat&logo=sass)](https://sass-lang.com)
+
+Aurora Timer 是一款面向工作室/团队的工时打卡管理桌面应用，支持计时、排行榜、通知发布等功能。
+
+## 🛠️ 技术栈
+
+| 类别 | 技术 |
+|------|------|
+| 框架 | Vue 3 + Composition API |
+| 状态管理 | Pinia |
+| 路由 | Vue Router |
+| HTTP | Axios |
+| 桌面打包 | Electron |
+| 构建工具 | Vite |
+| 样式 | SCSS |
+
+## 📦 安装
+
+```bash
+# 安装依赖
+npm install
+```
+
+## 🚀 运行
+
+```bash
+# 开发模式运行（Web）
+npm run dev
+
+# 开发模式运行（Electron 桌面端）
+npm run electron:dev
+```
+
+## 📦 构建桌面应用
+
+```bash
+# 构建生产版本
+npm run electron:build
+```
+
+### ⚠️ 跨平台打包注意事项
+
+| 操作系统 | 生成安装包 | 说明 |
+|----------|------------|------|
+| Windows | `.exe` (NSIS) | 直接运行 `npm run electron:build` 即可 |
+| Mac | `.dmg` | 需要在 Mac 系统上构建 |
+| Linux | `.AppImage` | 需要在 Linux 系统上构建 |
+
+> **注意**：如果你在 Mac 上但需要打包 Windows 的 `.exe`，可以考虑以下方案：
+> - 使用 [electron-builder](https://www.electron.build) 的 `--win` 参数（需要在 Mac 安装 Wine）
+> - 使用 CI/CD 环境（如 GitHub Actions）进行跨平台打包
+
+## 🔧 配置
+
+### 环境变量
+
+在项目根目录创建 `.env` 文件：
+
+```env
+# 开发环境 API 地址
+VITE_API_BASE_URL=http://localhost:8088
+```
+
+生产环境使用 `.env.production`：
+
+```env
+VITE_API_BASE_URL=http://your-server-ip:8088
+```
+
+## 📁 项目结构
+
+```
+AuroraTimer_Client/
+├── electron/           # Electron 主进程
+│   ├── main.js         # 主入口
+│   └── preload.js      # 预加载脚本
+├── src/
+│   ├── api/            # API 请求封装
+│   ├── assets/         # 静态资源
+│   ├── components/     # 公共组件
+│   ├── composables/    # 组合式函数
+│   ├── constants/     # 常量定义
+│   ├── router/         # 路由配置
+│   ├── stores/         # Pinia 状态管理
+│   ├── styles/         # 全局样式
+│   ├── utils/          # 工具函数
+│   └── views/          # 页面视图
+│       ├── admin/          # 管理后台
+│       ├── auth/           # 登录注册
+│       ├── dashboard/      # 首页/计时
+│       ├── leaderboard/    # 排行榜
+│       ├── notifications/  # 通知中心
+│       ├── profile/        # 个人中心
+│       └── settings/       # 设置
+├── index.html
+├── vite.config.js
+└── package.json
+```
+
+## 🔌 API 对接
+
+本项目为纯前端，需要搭配后端服务使用。
+
+---
+
+## 📄 许可证
+
+本项目基于 MIT 许可证开源，详见 [LICENSE](LICENSE)。
+
+---
+
+## 👤 作者
+
+- GitHub: [TwentyfiveBTea](https://github.com/TwentyfiveBTea)
+
+---
+
+## 🙏 感谢
+
+感谢使用 Aurora Timer！
