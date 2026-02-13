@@ -23,22 +23,53 @@ Aurora Timer 是一款面向工作室/团队的工时打卡管理桌面应用，
 | 构建工具 | Vite |
 | 样式 | SCSS |
 
-## 📦 安装
+## 📥 下载安装包
 
-```bash
-# 安装依赖
-npm install
-```
+前往 [Releases](https://github.com/TwentyfiveBTea/AuroraTimer_Client/releases) 页面下载对应版本：
 
-## 🚀 运行
+### Windows 用户
 
-```bash
-# 开发模式运行（Web）
-npm run dev
+| 文件 | 适用系统 | 架构 |
+|------|----------|------|
+| `Aurora Timer-Setup-x.x.x.exe` | Windows 7+ | x64 (Intel/AMD) |
 
-# 开发模式运行（Electron 桌面端）
-npm run electron:dev
-```
+> 💡 直接下载 `.exe` 文件，运行后按提示安装即可。
+
+### macOS 用户
+
+| 文件 | 适用 Mac | 芯片类型 |
+|------|----------|----------|
+| `Aurora Timer-x.x.x-arm64.dmg` | Mac (M1/M2/M3) | Apple Silicon |
+| `Aurora Timer-x.x.x.dmg` | Mac (Intel) | x64 |
+
+#### 如何确认自己的 Mac 芯片？
+
+1. 点击苹果菜单 () → 关于本机
+2. 查看"芯片"或"处理器"：
+   - **M1/M2/M3** → 下载 `arm64.dmg`
+   - **Intel** → 下载普通 `.dmg`
+
+#### ⚠️ macOS 安装注意事项
+
+由于应用未经过 Apple 公证，首次安装时：
+1. 打开 `.dmg`，将应用拖入 Applications 文件夹
+2. 在 Launchpad 中打开应用
+3. 若提示"无法打开"，右键点击应用 → 打开 → 仍要打开
+4. 之后即可正常使用
+
+### Linux 用户
+
+| 文件 | 适用系统 |
+|------|----------|
+| `Aurora Timer-x.x.x.AppImage` | Ubuntu/Debian/Fedora 等 |
+
+> 💡 给 `.AppImage` 文件添加执行权限后即可运行：
+> ```bash
+> chmod +x "Aurora Timer-x.x.x.AppImage"
+> ./"Aurora Timer-x.x.x.AppImage"
+> ```
+
+---
 
 ## 📦 构建桌面应用
 

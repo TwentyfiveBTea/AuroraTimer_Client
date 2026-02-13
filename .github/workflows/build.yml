@@ -19,6 +19,10 @@ jobs:
             platform: win
           - os: macos-latest
             platform: mac
+            arch: arm64
+          - os: macos-13
+            platform: mac
+            arch: x64
 
     runs-on: ${{ matrix.os }}
 
@@ -39,6 +43,7 @@ jobs:
         run: npm run electron:build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARCH: ${{ matrix.arch }}
 
       - name: List build output
         if: matrix.platform == 'mac'
@@ -60,7 +65,7 @@ jobs:
         if: matrix.platform == 'mac'
         uses: actions/upload-artifact@v4
         with:
-          name: mac-installer
+          name: mac-installer-${{ matrix.arch }}
           path: dist-electron/
           retention-days: 5
 
@@ -78,10 +83,16 @@ jobs:
           name: windows-installer
           path: release
 
-      - name: Download Mac installer
+      - name: Download Mac arm64 installer
         uses: actions/download-artifact@v4
         with:
-          name: mac-installer
+          name: mac-installer-arm64
+          path: release
+
+      - name: Download Mac x64 installer
+        uses: actions/download-artifact@v4
+        with:
+          name: mac-installer-x64
           path: release
 
       - name: List release files
