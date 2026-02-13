@@ -46,6 +46,7 @@ Thumbs.db
 .env
 .env.local
 .env.*.local
+.env.production
 
 # ====================
 # 临时文件
