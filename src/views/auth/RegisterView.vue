@@ -42,7 +42,7 @@
                     <div class="input-wrapper">
                       <span class="material-symbols-outlined input-icon">badge</span>
                       <input 
-                        v-model="form.studentId"
+                        v-model="form.userId"
                         type="text"
                         class="form-input"
                         required
@@ -237,16 +237,15 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { useTimerStore } from '@/stores/timer'
+import { showError } from '@/composables/useMessage'
 
 const router = useRouter()
 const authStore = useAuthStore()
-const timerStore = useTimerStore()
 
 const isLoading = ref(false)
 
 const form = reactive({
-  studentId: '',
+  userId: '',
   name: '',
   email: '',
   password: '',
@@ -272,16 +271,16 @@ const toggleShowPassword = (field) => {
   }
 }
 
-// 方向选项
-const directionOptions = [
-  { value: 'frontend', label: '前端' },
-  { value: 'backend', label: '后端' },
-  { value: 'design', label: '设计' },
-  { value: 'algorithm', label: '算法' },
-  { value: 'embedded', label: '嵌入式' },
-  { value: 'data-analysis', label: '数据分析' },
-  { value: 'security', label: '网络安全' }
-]
+  // 方向选项
+  const directionOptions = [
+    { value: '前端', label: '前端' },
+    { value: '后端', label: '后端' },
+    { value: '设计', label: '设计' },
+    { value: '算法', label: '算法' },
+    { value: '嵌入式', label: '嵌入式' },
+    { value: '数据分析', label: '数据分析' },
+    { value: '网络安全', label: '网络安全' }
+  ]
 
 // 邮箱校验
 function validateEmail() {
@@ -333,7 +332,7 @@ const isFormValid = computed(() => {
   
   return (
     form.name.trim() !== '' &&
-    form.studentId.trim() !== '' &&
+    form.userId.trim() !== '' &&
     emailRegex.test(form.email) &&
     passwordValid &&
     confirmValid &&
@@ -348,30 +347,37 @@ async function handleRegister() {
   validateConfirmPassword()
   
   if (!isFormValid.value) {
+    console.log('表单验证失败')
     return
   }
   
   isLoading.value = true
   
   try {
+    console.log('开始注册...')
     const result = await authStore.register({
-      studentId: form.studentId,
+      userId: form.userId,
       name: form.name,
       email: form.email,
       password: form.password,
+      confirmPassword: form.confirmPassword,
       direction: form.direction
     })
     
-    if (result.success) {
-      // 注册成功后自动开始计时
-      timerStore.startTimer()
-  router.push('/')
+    console.log('注册完成，结果:', result)
+    
+    if (result?.success) {
+      // 注册成功，跳转到登录页面
+      console.log('准备跳转登录页...')
+      router.push('/login')
     } else {
-      alert(result.message || '注册失败')
+      // 显示错误提示
+      console.warn('注册提示:', result?.message)
+      showError(result?.message || '注册失败')
     }
   } catch (error) {
     console.error('注册错误:', error)
-    alert('注册失败，请检查网络连接')
+    showError(error.message || '注册失败')
   } finally {
     isLoading.value = false
   }

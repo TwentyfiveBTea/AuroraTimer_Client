@@ -94,6 +94,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { adminAPI } from '@/api'
 
 const router = useRouter()
 
@@ -106,12 +107,6 @@ const showPassword = ref(false)
 const isLoading = ref(false)
 const errorMessage = ref('')
 
-// 管理员账号密码配置
-const ADMIN_CREDENTIALS = {
-  username: 'admin',
-  password: 'aurora2024'
-}
-
 function toggleShowPassword() {
   showPassword.value = !showPassword.value
 }
@@ -120,7 +115,7 @@ function goBack() {
   router.back()
 }
 
-function handleLogin() {
+async function handleLogin() {
   errorMessage.value = ''
 
   // 验证输入
@@ -131,19 +126,52 @@ function handleLogin() {
 
   isLoading.value = true
 
-  // 模拟登录验证
-  setTimeout(() => {
-    if (form.username === ADMIN_CREDENTIALS.username &&
-        form.password === ADMIN_CREDENTIALS.password) {
+  try {
+    // 调用真实管理员登录 API
+    const response = await adminAPI.login({
+      username: form.username,
+      password: form.password
+    })
+
+    console.log('管理员登录 API 返回原始响应:', response)
+
+    // 检查响应状态 - 兼容多种成功判断方式
+    const code = response?.code
+    const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
+    const isSuccessMessage = response?.message?.includes('成功') || response?.message?.includes('ok')
+
+    if (isSuccessCode || isSuccessMessage) {
       // 登录成功，保存管理员状态
-      localStorage.setItem('admin_token', 'admin-authenticated')
-      localStorage.setItem('admin_user', form.username)
-      router.push('/admin')
+      let token = response.data
+      
+      // 处理 token 可能是对象的情况
+      if (typeof token === 'object' && token !== null) {
+        token = token.token || token.accessToken || token.jwt || JSON.stringify(token)
+      }
+      
+      console.log('[AdminLogin] 登录成功，Token:', token)
+      console.log('[AdminLogin] Token 类型:', typeof token)
+      
+      // 确保 token 是字符串
+      if (typeof token === 'string' && token.length > 0) {
+        // 确保 token 不包含 Bearer 前缀（如果已包含则去掉）
+        const cleanToken = token.startsWith('Bearer ') ? token.substring(7) : token
+        localStorage.setItem('admin_token', cleanToken)
+        localStorage.setItem('admin_user', form.username)
+        router.push('/admin')
+      } else {
+        console.error('[AdminLogin] Token 格式错误:', token)
+        errorMessage.value = '登录成功但 token 格式错误'
+      }
     } else {
-      errorMessage.value = '账号或密码错误'
+      errorMessage.value = response?.message || '账号或密码错误'
     }
+  } catch (error) {
+    console.error('管理员登录失败:', error)
+    errorMessage.value = '登录失败，请检查网络连接'
+  } finally {
     isLoading.value = false
-  }, 1000)
+  }
 }
 </script>
 

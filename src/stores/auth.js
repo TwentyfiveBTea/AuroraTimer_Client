@@ -1,38 +1,83 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { setStorage, getStorage, removeStorage } from '@/utils'
-import { authAPI, mockAPI } from '@/api'
+import { authAPI, userAPI } from '@/api'
 
 export const useAuthStore = defineStore('auth', () => {
-  // 状态
+  // ============ 状态 ============
   const user = ref(null)
   const token = ref(getStorage('auth_token', null))
   const isLoading = ref(false)
   const error = ref(null)
   
-  // 计算属性
+  // ============ 计算属性 ============
   const isAuthenticated = computed(() => !!token.value && !!user.value)
   const userName = computed(() => user.value?.name || '用户')
   const userEmail = computed(() => user.value?.email || '')
   const userAvatar = computed(() => user.value?.avatar)
-  const userStudentId = computed(() => user.value?.studentId || '暂无学号')
-  const userLevel = computed(() => user.value?.level || 1)
-  const totalHours = computed(() => user.value?.totalHours || 0)
+  const userStudentId = computed(() => user.value?.userId || user.value?.studentId || '暂无学号')
+  const totalHours = computed(() => user.value?.totalSeconds ? Math.round(user.value.totalSeconds / 3600) : 0)
   
-  // 登录
+  // ============ 调试日志 ============
+  console.log('[Auth Store] 初始化完成')
+  console.log('[Auth Store] token:', token.value ? '已存在' : '不存在')
+  console.log('[Auth Store] user:', user.value ? '已存在' : '不存在')
+  console.log('[Auth Store] isAuthenticated:', isAuthenticated.value)
+  
+  // ============ 登录 ============
   async function login(credentials) {
     isLoading.value = true
     error.value = null
     
     try {
-      // 使用模拟 API 进行开发测试
-      // 真实环境切换为: const response = await authAPI.login(credentials)
-      const response = await mockAPI.mockLogin(credentials)
+      // 调用真实 API
+      const response = await authAPI.login({
+        account: credentials.account,
+        password: credentials.password
+      })
       
-      if (response.code === 200) {
-        token.value = response.data.token
-        user.value = response.data.user
-        setStorage('auth_token', token.value)
+      console.log('登录 API 返回原始响应:', response)
+      
+      // 检查响应状态 - 兼容多种成功判断方式
+      const code = response?.code
+      const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
+      const isSuccessMessage = response?.message?.includes('成功') || response?.message?.includes('ok')
+      
+      if (isSuccessCode || isSuccessMessage) {
+        // 后端返回格式: { code, message, data: { token, name, userId, avatar } }
+        const userData = response.data
+        
+        console.log('[Auth] 登录成功，保存数据:')
+        console.log('[Auth] userData:', userData)
+        
+        // 保存 token（直接使用 localStorage，避免 JSON.stringify 添加引号）
+        token.value = userData.token
+        localStorage.setItem('auth_token', userData.token)
+        console.log('[Auth] token 已保存:')
+        console.log('  - 原始 token 长度:', userData.token.length)
+        console.log('  - 保存后 localStorage 读取:', localStorage.getItem('auth_token')?.length)
+        console.log('  - Token 前10字符:', userData.token.substring(0, 10))
+        console.log('  - Token 后10字符:', userData.token.substring(userData.token.length - 10))
+        
+        // 保存用户信息
+        if (userData.userId || userData.name || userData.avatar) {
+          user.value = {
+            userId: userData.userId,
+            name: userData.name,
+            avatar: userData.avatar,
+            email: userData.email,
+            direction: userData.direction,
+            position: userData.position,
+            totalSeconds: userData.totalSeconds
+          }
+          // 缓存 userId
+          localStorage.setItem('auth_userId', userData.userId)
+          // 缓存完整的用户信息
+          localStorage.setItem('auth_userInfo', JSON.stringify(user.value))
+          console.log('[Auth] 用户信息已保存:', user.value)
+        }
+        
+        console.log('[Auth] isAuthenticated:', isAuthenticated.value)
         return { success: true }
       } else {
         throw new Error(response.message || '登录失败')
@@ -45,23 +90,37 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
   
-  // 注册
+  // ============ 注册 ============
   async function register(userData) {
     isLoading.value = true
     error.value = null
     
     try {
-      // 使用模拟 API 进行开发测试
-      // 真实环境切换为: const response = await authAPI.register(userData)
-      const response = await mockAPI.mockRegister(userData)
+      // 调用真实 API
+      const response = await authAPI.register({
+        name: userData.name,
+        userId: userData.userId,
+        email: userData.email,
+        password: userData.password,
+        confirmPassword: userData.confirmPassword,
+        direction: userData.direction
+      })
       
-      if (response.code === 200) {
-        token.value = response.data.token
-        user.value = response.data.user
-        setStorage('auth_token', token.value)
+      console.log('注册 API 返回原始响应:', response)
+      
+      // 检查响应状态 - 兼容多种成功判断方式
+      const code = response?.code
+      const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
+      const isSuccessMessage = response?.message?.includes('成功') || response?.message?.includes('ok')
+      
+      // 如果 code 是 200/0000000，或者 message 包含"成功"，都视为成功
+      if (isSuccessCode || isSuccessMessage) {
+        // 注册成功，跳转到登录页面（不自动登录）
         return { success: true }
       } else {
-        throw new Error(response.message || '注册失败')
+        // 提取错误信息
+        const errorMsg = response?.message || response?.msg || '注册失败'
+        throw new Error(errorMsg)
       }
     } catch (err) {
       error.value = err.message
@@ -71,59 +130,173 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
   
-  // 退出登录
+  // ============ 退出登录 ============
   async function logout() {
     try {
-      // 真实环境: await authAPI.logout()
+      const response = await authAPI.logout()
+      
+      console.log('退出登录 API 返回原始响应:', response)
+    } catch (err) {
+      console.error('退出登录请求失败:', err)
     } finally {
+      // 无论成功失败，都清除本地状态
       token.value = null
       user.value = null
       removeStorage('auth_token')
     }
   }
   
-  // 获取用户信息
+  // ============ 获取用户信息 ============
   async function fetchUser() {
     if (!token.value) return
     
     isLoading.value = true
     try {
-      // 真实环境: const response = await authAPI.getCurrentUser()
-      // 模拟数据
-      const response = {
-        code: 200,
-        data: {
-          id: 1,
-          name: '测试用户',
-          studentId: '20230001',
-          email: userEmail.value || 'test@example.com',
-          avatar: null,
-          totalHours: 365.5,
-            level: 5,
-            currentWeekTime: 0 // 本周累计工时（秒）
+      // 后端接口: POST /users/{userId}
+      // 需要提供 userId
+      const userId = user.value?.userId || localStorage.getItem('auth_userId')
+      if (!userId) {
+        console.warn('无法获取用户ID')
+        // 尝试从本地存储恢复
+        const savedUserInfo = localStorage.getItem('auth_userInfo')
+        if (savedUserInfo) {
+          try {
+            user.value = JSON.parse(savedUserInfo)
+          } catch (e) {
+            console.error('[Auth] 解析本地用户信息失败:', e)
+          }
         }
+        return
       }
       
-      if (response.code === 200) {
+      const response = await userAPI.getUserInfo(userId)
+      
+      console.log('获取用户信息 API 返回原始响应:', response)
+      
+      // 检查响应状态 - 兼容多种成功判断方式
+      const code = response?.code
+      const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
+      const isSuccessMessage = response?.message?.includes('成功') || response?.message?.includes('ok')
+      
+      if (isSuccessCode || isSuccessMessage) {
         user.value = response.data
+        // 缓存 userId
+        localStorage.setItem('auth_userId', response.data.userId)
+        // 缓存完整的用户信息
+        localStorage.setItem('auth_userInfo', JSON.stringify(response.data))
       }
     } catch (err) {
       error.value = err.message
+      console.warn('获取用户信息失败，尝试从本地存储恢复:', err.message)
+      
+      // 尝试从本地存储恢复用户信息
+      const savedUserInfo = localStorage.getItem('auth_userInfo')
+      if (savedUserInfo) {
+        try {
+          user.value = JSON.parse(savedUserInfo)
+          console.log('[Auth] 已从本地存储恢复用户信息')
+        } catch (e) {
+          console.error('[Auth] 解析本地用户信息失败:', e)
+        }
+      }
     } finally {
       isLoading.value = false
     }
   }
   
-  // 更新用户资料
+  // ============ 更新用户资料 ============
   async function updateProfile(data) {
     isLoading.value = true
     error.value = null
     
     try {
-      // 真实环境: await userAPI.updateProfile(data)
-      // 模拟
-      user.value = { ...user.value, ...data }
-      return { success: true }
+      // 确保有 userId
+      if (!user.value?.userId) {
+        throw new Error('无法获取用户ID')
+      }
+      
+      // 调用真实 API
+      const response = await userAPI.updateProfile({
+        userId: user.value.userId,
+        direction: data.direction,
+        position: data.position,
+        email: data.email,
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword
+      })
+      
+      console.log('更新用户资料 API 返回原始响应:', response)
+      
+      // 检查响应状态 - 兼容多种成功判断方式
+      const code = response?.code
+      const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
+      const isSuccessMessage = response?.message?.includes('成功') || response?.message?.includes('ok')
+      
+      if (isSuccessCode || isSuccessMessage) {
+        // 重新获取用户信息
+        await fetchUser()
+        return { success: true }
+      } else {
+        throw new Error(response.message || '更新失败')
+      }
+    } catch (err) {
+      error.value = err.message
+      return { success: false, message: err.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // ============ 上传头像 ============
+  async function uploadAvatar(file) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await userAPI.uploadAvatar(file)
+      
+      console.log('上传头像 API 返回原始响应:', response)
+      
+      // 检查响应状态 - 兼容多种成功判断方式
+      const code = response?.code
+      const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
+      const isSuccessMessage = response?.message?.includes('成功') || response?.message?.includes('ok')
+      
+      if (isSuccessCode || isSuccessMessage) {
+        // 重新获取用户信息以更新头像
+        await fetchUser()
+        return { success: true }
+      } else {
+        throw new Error(response.message || '上传失败')
+      }
+    } catch (err) {
+      error.value = err.message
+      return { success: false, message: err.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // ============ 忘记密码 ============
+  async function forgotPassword(userId) {
+    isLoading.value = true
+    error.value = null
+    
+    try {
+      const response = await authAPI.resetPassword({ userId })
+      
+      console.log('忘记密码 API 返回原始响应:', response)
+      
+      // 检查响应状态 - 兼容多种成功判断方式
+      const code = response?.code
+      const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
+      const isSuccessMessage = response?.message?.includes('成功') || response?.message?.includes('ok')
+      
+      if (isSuccessCode || isSuccessMessage) {
+        return { success: true, message: '密码重置成功' }
+      } else {
+        throw new Error(response.message || '操作失败')
+      }
     } catch (err) {
       error.value = err.message
       return { success: false, message: err.message }
@@ -132,22 +305,61 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
   
+  // ============ 初始化从本地存储恢复数据 ============
+  function initFromStorage() {
+    // 尝试从 localStorage 恢复用户信息（直接使用 localStorage，避免 JSON 解析问题）
+    const savedUserInfo = localStorage.getItem('auth_userInfo')
+    const savedUserId = localStorage.getItem('auth_userId')
+    const savedToken = localStorage.getItem('auth_token')
+    
+    console.log('[Auth] initFromStorage 被调用')
+    console.log('[Auth] auth_token:', savedToken ? '已保存 (长度: ' + savedToken.length + ')' : '不存在')
+    console.log('[Auth] auth_userInfo:', savedUserInfo ? '已保存' : '不存在')
+    console.log('[Auth] auth_userId:', savedUserId || '不存在')
+    
+    if (savedToken) {
+      token.value = savedToken
+      console.log('[Auth] token 已恢复到响应式变量')
+    }
+    
+    if (savedUserInfo) {
+      try {
+        user.value = JSON.parse(savedUserInfo)
+        console.log('[Auth] 已从本地存储恢复用户信息:', user.value)
+        console.log('[Auth] isAuthenticated 恢复后:', isAuthenticated.value)
+      } catch (e) {
+        console.error('[Auth] 解析本地用户信息失败:', e)
+      }
+    }
+  }
+  
+  // 页面加载时初始化
+  initFromStorage()
+  
+  // ============ 返回 ============
   return {
+    // 状态
     user,
     token,
     isLoading,
     error,
+    
+    // 计算属性
     isAuthenticated,
     userName,
     userEmail,
     userAvatar,
     userStudentId,
-    userLevel,
     totalHours,
+    
+    // 方法
     login,
     register,
     logout,
     fetchUser,
-    updateProfile
+    updateProfile,
+    uploadAvatar,
+    forgotPassword,
+    initFromStorage
   }
 })

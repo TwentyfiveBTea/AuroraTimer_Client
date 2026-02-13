@@ -20,75 +20,49 @@
       </div>
       
       <!-- Reset Form -->
-      <transition name="fade-slide" mode="out-in">
-        <div v-if="!showSuccess" key="reset-form" class="forgot-password-card__body">
-          <div class="forgot-password-card__title-area">
-            <h2 class="forgot-password-card__title">忘记密码？</h2>
-            <p class="forgot-password-card__subtitle">
-              别担心，我们都有忘记的时候。<br/>
-              请输入您的学号，我们将为您重置密码。
+      <div class="forgot-password-card__body">
+        <div class="forgot-password-card__title-area">
+          <h2 class="forgot-password-card__title">忘记密码？</h2>
+          <p class="forgot-password-card__subtitle">
+            别担心，我们都有忘记的时候。<br/>
+            请输入您的学号，我们将为您重置密码。
+          </p>
+        </div>
+        
+        <form @submit.prevent="handleSubmit" class="forgot-password-form">
+          <div class="form-group">
+            <label class="form-label">输入学号</label>
+            <div class="input-wrapper">
+              <span class="material-symbols-outlined input-icon">badge</span>
+              <input 
+                v-model="form.userId"
+                type="text"
+                class="form-input"
+                required
+              />
+            </div>
+            <p class="form-hint">
+              <span class="material-symbols-outlined">info</span>
+              您的密码将被重置为 Aurora666
             </p>
           </div>
           
-          <form @submit.prevent="handleSubmit" class="forgot-password-form">
-            <div class="form-group">
-              <label class="form-label">输入学号</label>
-              <div class="input-wrapper">
-                <span class="material-symbols-outlined input-icon">badge</span>
-                <input 
-                  v-model="form.studentId"
-                  type="text"
-                  class="form-input"
-                  required
-                />
-              </div>
-              <p class="form-hint">
-                <span class="material-symbols-outlined">info</span>
-                您的密码将被重置为 Aurora666
-              </p>
-            </div>
-            
-            <button 
-              type="submit" 
-              class="submit-btn"
-              :disabled="isLoading"
-            >
-              <span>重置密码</span>
-            </button>
-          </form>
-          
-          <div class="back-link">
-            <router-link to="/login">
-              <span class="material-symbols-outlined">arrow_back</span>
-              返回登录
-            </router-link>
-          </div>
-        </div>
+          <button 
+            type="submit" 
+            class="submit-btn"
+            :disabled="isLoading"
+          >
+            <span>重置密码</span>
+          </button>
+        </form>
         
-        <!-- Success View -->
-        <div v-else key="success-view" class="forgot-password-card__body">
-          <div class="success-view">
-            <div class="success-card">
-              <div class="success-icon">
-                <span class="material-symbols-outlined">check</span>
-              </div>
-              <h3 class="success-title">密码已重置！</h3>
-              <p class="success-message">您的新密码为:</p>
-              <div class="password-display">
-                <span>123456</span>
-              </div>
-              <p class="success-hint">请登录后及时修改。</p>
-            </div>
-            
-            <button class="back-btn" @click="goToLogin">
-              返回登录
-            </button>
-          </div>
+        <div class="back-link">
+          <router-link to="/login">
+            <span class="material-symbols-outlined">arrow_back</span>
+            返回登录
+          </router-link>
         </div>
-      </transition>
-      
-      <!-- Footer Links -->
-      <!-- Support & Privacy links removed for Electron app -->
+      </div>
     </div>
   </div>
 </template>
@@ -96,30 +70,56 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import { showError, showSuccess as showSuccessMsg } from '@/composables/useMessage'
 
 const router = useRouter()
+const authStore = useAuthStore()
 
 const isLoading = ref(false)
-const showSuccess = ref(false)
 
 const form = reactive({
-  studentId: ''
+  userId: ''
 })
 
 async function handleSubmit() {
-  if (!form.studentId.trim()) return
+  if (!form.userId.trim()) {
+    showError('请输入学号')
+    return
+  }
   
   isLoading.value = true
   
-  // Simulate API call
-  await new Promise(resolve => setTimeout(resolve, 1000))
-  
-  isLoading.value = false
-  showSuccess.value = true
-}
-
-function goToLogin() {
-  router.push('/login')
+  try {
+    console.log('开始重置密码...')
+    // 调用真实 API
+    const result = await authStore.forgotPassword(form.userId)
+    
+    console.log('重置密码结果:', result)
+    
+    if (result?.success) {
+      // 重置成功，显示成功提示后跳转到登录页面
+      console.log('准备显示成功提示...')
+      showSuccessMsg('密码重置成功，新密码为：Aurora666')
+      
+      // 1.5秒后自动跳转到登录页面
+      console.log('准备1.5秒后跳转...')
+      setTimeout(() => {
+        console.log('执行跳转...')
+        router.push('/login')
+      }, 1500)
+    } else if (result?.message) {
+      console.warn('重置失败:', result.message)
+      showError(result.message)
+    } else {
+      console.warn('重置结果异常:', result)
+    }
+  } catch (error) {
+    console.error('重置密码错误:', error)
+    showError('重置密码失败，请检查网络连接')
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 
@@ -374,112 +374,6 @@ function goToLogin() {
 
 .back-link a:hover .material-symbols-outlined {
   transform: translateX(-2px);
-}
-
-/* Success View */
-.success-view {
-  text-align: center;
-}
-
-.success-card {
-  background-color: var(--color-success);
-  background-color: rgba(204, 213, 174, 0.4);
-  border: 1px solid rgba(204, 213, 174, 0.6);
-  border-radius: 20px;
-  padding: 24px;
-  margin-bottom: var(--spacing-lg);
-}
-
-.success-icon {
-  width: 48px;
-  height: 48px;
-  background-color: #8B9D77;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto var(--spacing-md);
-  color: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.success-icon .material-symbols-outlined {
-  font-size: 24px;
-}
-
-.success-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--color-text-main);
-  margin: 0 0 var(--spacing-xs);
-}
-
-.success-message {
-  font-size: 14px;
-  color: var(--color-text-secondary);
-  margin: 0 0 var(--spacing-sm);
-}
-
-.password-display {
-  display: inline-block;
-  padding: 8px 16px;
-  background-color: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 12px;
-  margin-bottom: var(--spacing-sm);
-}
-
-.password-display span {
-  font-family: monospace;
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--color-primary);
-  letter-spacing: 0.1em;
-}
-
-.success-hint {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  margin: 0;
-}
-
-.back-btn {
-  width: 100%;
-  padding: 16px;
-  background-color: rgba(0, 0, 0, 0.05);
-  color: var(--color-text-secondary);
-  border: none;
-  border-radius: 16px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.back-btn:hover {
-  background-color: rgba(0, 0, 0, 0.08);
-}
-
-.back-btn:active {
-  transform: scale(0.98);
-}
-
-/* Footer - removed */
-
-/* Transitions */
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.3s ease;
-}
-
-.fade-slide-enter-from {
-  opacity: 0;
-  transform: translateY(10px);
-}
-
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: translateY(-10px);
 }
 
 /* Responsive */

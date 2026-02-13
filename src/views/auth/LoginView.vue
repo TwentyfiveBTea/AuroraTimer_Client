@@ -162,6 +162,7 @@ import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTimerStore } from '@/stores/timer'
+import { showError, showWarning } from '@/composables/useMessage'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -189,7 +190,7 @@ async function handleLogin() {
   
   try {
     const result = await authStore.login({
-      email: form.username,
+      account: form.username,
       password: form.password
     })
     
@@ -200,12 +201,12 @@ async function handleLogin() {
       // 获取 redirect 参数或跳转到首页
       const redirect = router.currentRoute.value.query.redirect || '/'
       router.push(redirect)
-    } else {
-      alert(result.message || '登录失败')
+    } else if (result.message) {
+      showWarning(result.message)
     }
   } catch (error) {
     console.error('登录错误:', error)
-    alert('登录失败，请检查网络连接')
+    showError('登录失败，请检查网络连接')
   } finally {
     isLoading.value = false
   }
