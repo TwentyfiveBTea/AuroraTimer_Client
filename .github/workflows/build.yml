@@ -41,12 +41,12 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: List build output
-        run: |
-          if [ "$RUNNER_OS" = "Windows" ]; then
-            dir dist-electron
-          else
-            ls -la dist-electron
-          fi
+        if: matrix.platform == 'mac'
+        run: ls -la dist-electron
+
+      - name: List build output
+        if: matrix.platform == 'win'
+        run: dir dist-electron
 
       - name: Upload Windows installer
         if: matrix.platform == 'win'
