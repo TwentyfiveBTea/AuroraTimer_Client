@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import { fileURLToPath, URL } from 'node:url'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [vue()],
   resolve: {
     alias: {
@@ -13,9 +13,9 @@ export default defineConfig({
     port: 5173,
     open: false
   },
-  base: './',
+  base: mode === 'production' ? '/' : './',
   build: {
     outDir: 'dist',
     assetsDir: 'assets'
   }
-})
+}))
