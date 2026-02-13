@@ -83,17 +83,17 @@
                   </div>
                   <div class="leaderboard-table__cell leaderboard-table__cell--avatar">
                     <div class="avatar-wrapper" :class="{ 'avatar-wrapper--small': item.rank > 1 }">
-                      <img :src="item.avatar" :alt="item.name" />
+                      <img :src="item.avatar || defaultAvatar" :alt="item.name" />
                     </div>
                   </div>
                   <div class="leaderboard-table__cell leaderboard-table__cell--name">
                     <div class="member-info">
                       <span class="member-name">{{ item.name }}</span>
-                      <span class="member-role" :class="{ 'member-role--muted': item.role !== '超级管理员' && item.role !== '管理员' }">{{ item.role }}</span>
+                      <span class="member-role" :class="{ 'member-role--muted': item.position !== '超级管理员' && item.position !== '管理员' }">{{ item.position || '正式成员' }}</span>
                     </div>
                   </div>
                   <div class="leaderboard-table__cell leaderboard-table__cell--grade">
-                    <span class="grade-badge" :class="{ 'grade-badge--muted': item.grade !== '2020级' }">{{ item.grade }}</span>
+                    <span class="grade-badge" :class="{ 'grade-badge--muted': item.grade !== '2020级' }">{{ item.grade || '-' }}</span>
                   </div>
                   <div class="leaderboard-table__cell leaderboard-table__cell--total">
                     <span class="total-hours" :class="{ 'total-hours--muted': item.rank > 1 }">{{ item.totalHours }}</span>
@@ -113,14 +113,14 @@
               <div class="footer-stats">
                 <div class="footer-stat">
                   <span class="footer-stat__dot footer-stat__dot--secondary"></span>
-                  <span>{{ periodPrefix }}平均在线时长: 4h 22m</span>
+                  <span>{{ periodPrefix }}平均在线时长: {{ stats.averageHours }}</span>
                 </div>
               </div>
               
               <div class="footer-progress">
-                <span class="footer-progress__label">{{ periodPrefix }}全部达标进度: 84%</span>
+                <span class="footer-progress__label">{{ periodPrefix }}全部达标进度: {{ stats.milestoneProgress }}%</span>
                 <div class="footer-progress__bar">
-                  <div class="footer-progress__fill" style="width: 84%"></div>
+                  <div class="footer-progress__fill" :style="{ width: stats.milestoneProgress + '%' }"></div>
                 </div>
               </div>
             </div>
@@ -132,23 +132,23 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useAuthStore } from '@/stores/auth'
+import { useLeaderboardStore } from '@/stores/leaderboard'
 import DirectionBadge from '@/components/DirectionBadge.vue'
 
 const authStore = useAuthStore()
+const leaderboardStore = useLeaderboardStore()
+
+// 定时刷新（每 5 秒刷新一次排行榜）
+const REFRESH_INTERVAL = 5000
+let refreshTimer = null
 
 // 默认头像
 const defaultAvatar = 'https://lh3.googleusercontent.com/aida-public/AB6AXuBKARB0_YC8RnE8NXoFzsL7c01BoXVeKA4Yl7D3yHYpjvbKXo8oEz6AP5d5eu6cxn8df-N2gmfC95N6F47iQvcjUjwCdGGM83oGRLL_bdNt42qZ4U2lV7Zz064WYecTWY9Ns-43M2cCe2hR8bysZrnubMpVWvtwiicikI6eMCSCbC_In9c4MtqOvrPMcUyG3AW5994tHKR7EoZmeUXPzTZFuNLnm2SexTU266jGT1-kZfV0ShWFvZq6CfU3cOmXoN7LOmg0nwHN4ukT'
 
-// 周选项配置
-const weekOptions = ref([
-  { value: 'this-week', label: '本周实时' },
-  { value: 'last-week', label: '上周' },
-  { value: '2-weeks-ago', label: '上上周' },
-  { value: '3-weeks-ago', label: '上上上周' },
-  { value: '4-weeks-ago', label: '上上上上周' }
-])
+// 周选项配置（使用 store 的配置）
+const weekOptions = computed(() => leaderboardStore.weekOffsets)
 
 // 当前选中的周索引（0 = 本周）
 const selectedWeekIndex = ref(0)
@@ -194,64 +194,84 @@ function selectNextWeek() {
   }
 }
 
-// Mock data
-const leaderboardData = ref([
-  {
-    rank: 1,
-    name: '陈伟',
-    role: '超级管理员',
-    grade: '2020级',
-    totalHours: '89h 00m',
-    weekHours: '07:19:42',
-    direction: '后端',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCmdzf6DNmSIdaXk8TJxo2toauvT9FXzdF1mn7fk4r3ETxLwFNwlXzFMVPj1wfYhE2-eLZV5TuxUZ328ErOrjHNBEDlswL64pRskdqEMXq8XRKa0-Z-Bh8XXjqE7v03LVO9-NyVWIB0gxmX-HvrXE41winaLhiUfSZnp7IdS5pvnZDvfBrVS8xK73nMb3EyW1drOH4M8XKqucLp6ZSLYPgykdla2MYK-HLNYI83VJyoinNss4X715_lyE9lWrJqkVLV_keA-NBqkbYb'
-  },
-  {
-    rank: 2,
-    name: '李娜',
-    role: '正式成员',
-    grade: '2021级',
-    totalHours: '62h 31m',
-    weekHours: '06:45:10',
-    direction: '网络安全（考核成员）',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuD6vnRykXjDc04bHrxZD8K-Hy2TGZbl1JlNzWn9eMKL-Vsq43jtTWR2J-eIHWWkMURY1JcyX1r9NL5aly-5zUnDiIofdpOv1hjPk0QQbwGCr1xLHdoD2FoIbTYqNAG-o3zO3c_OEYPfReTQr1RayselAn9s5yWmPuzYDwVx-tEcrHF4bGcUGDysVoG2wiXrhvKqTrz_4vqktjfxp1FndkPIXVQeeuGVycqr0mK9-YaB8ST65tdIt6RK-omq6-5pM2XKbDZs4BFjNw-y'
-  },
-  {
-    rank: 3,
-    name: '王浩',
-    role: '管理员',
-    grade: '2021级',
-    totalHours: '50h 25m',
-    weekHours: '05:12:00',
-    direction: '算法',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCxQnND00LqsabenUz6UmxXZtKDWoDEAWcwUWfiqOm-M7WT31a3N7FYbis11XyCXQ93egC-z7W68EGqcaK9fgE3oecgnT3TXxA4LlA_u4zD8Lpp9xGDiD2PbsISd_dZNZgPz5uH8hwY_j9H97IonmH6GvqOReUDoSIzk2sAgm15ZQNgsegbzJQCuX7BuxDgce1Qcv0D1VNI-fbnlqnHvQSiK1iVFVW-nOwJRJvnCb-hCgoZUK8wid6R2Zy_MmmGyZZJM3QMQKNyPg8L'
-  },
-  {
-    rank: 4,
-    name: '刘洋',
-    role: '正式成员',
-    grade: '2022级',
-    totalHours: '38h 15m',
-    weekHours: '04:15:00',
-    direction: '前端',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCJNz35Kxp2Vx4KsocJFpoyr2dFVhQx_GLTpkOqjXi_P5_tZmuzR2sQ4gy1E-IAI-I9z9M2CDJjaw0228W28z6O_NuHRvysZ5ebKOCm3wC8COf8teZS90vtPEDl0ixEl52Rj1RTYAE2HtLYIb1PgNMfUcc48DjTS__ew0BCrVP1oUDwkuf0Pvw-LG5nAuQgDF7iCxfSBtVFgzOevdFVAz0M6C06K_sLuKG13A2M4Fc5E0eE7PTJfvseBcWNdXlh30NsPnf_h_9qxYnU'
-  },
-  {
-    rank: 5,
-    name: '张伟',
-    role: '正式成员',
-    grade: '2021级',
-    totalHours: '45h 10m',
-    weekHours: '04:10:15',
-    direction: '',
-    avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuAOzp3Nqe0AqujJw02pehft3zwlH51IlnLYzpt4smPCNaOHA9Y1kWfHOpP9lJGSrdTtflBio7lgcIWMEFgHypWlq4gIwI5FKew-vAdAd6rS58ZIAienF-QhA44JVZmG_htsGsftPf4LR0r3hC-3A7TuIFxvpURQ3rpzEFBJQiR7lxvom5TrQA8kE13IGTGfG6HDiziSDY5zbY4Dj-onwuyomTiPMyKQYANlh7bHYPdYAr5P-WsHdUdxIb62rdZFrokjcFRJyIJf_VJO'
-  }
-])
+// 排行榜数据（从 store 获取）
+const leaderboardData = computed(() => {
+  return leaderboardStore.rankings.map(item => ({
+    ...item,
+    // 格式化时间显示
+    weekHours: formatTime(item.weekTime),
+    totalHours: formatTime(item.totalTime)
+  }))
+})
 
-const stats = ref({
-  activeMembers: 142,
-  averageHours: '4h 22m',
-  milestoneProgress: 84
+// 统计数据
+const stats = computed(() => {
+  return {
+    activeMembers: leaderboardStore.rankings.length,
+    averageHours: formatDuration(leaderboardStore.otherData.avgOnlineDuration),
+    milestoneProgress: leaderboardStore.otherData.weeklyGoalProgress || 0
+  }
+})
+
+// 格式化秒数为 HH:mm:ss
+function formatTime(seconds) {
+  if (!seconds) return '00:00:00'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  const s = Math.floor(seconds % 60)
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+}
+
+// 格式化时长为 Xh Ym
+function formatDuration(seconds) {
+  if (!seconds) return '0h 0m'
+  const h = Math.floor(seconds / 3600)
+  const m = Math.floor((seconds % 3600) / 60)
+  return `${h}h ${m}m`
+}
+
+// 加载数据
+async function loadData() {
+  await Promise.all([
+    leaderboardStore.fetchLeaderboard(),
+    leaderboardStore.fetchLeaderboardOther()
+  ])
+}
+
+// 启动定时刷新
+function startRefreshTimer() {
+  if (refreshTimer) return
+  refreshTimer = setInterval(() => {
+    loadData()
+  }, REFRESH_INTERVAL)
+  console.log('[Leaderboard] 启动定时刷新，每 5 秒更新一次')
+}
+
+// 停止定时刷新
+function stopRefreshTimer() {
+  if (refreshTimer) {
+    clearInterval(refreshTimer)
+    refreshTimer = null
+    console.log('[Leaderboard] 停止定时刷新')
+  }
+}
+
+// 监听周选择变化
+watch(selectedWeekIndex, async (newIndex) => {
+  // weekOffset: 0=本周, -1=上周...
+  const offset = newIndex
+  await leaderboardStore.setWeekOffset(offset)
+})
+
+// 页面加载时获取数据并启动定时刷新
+onMounted(async () => {
+  await loadData()
+  startRefreshTimer()
+})
+
+// 页面卸载时停止定时刷新
+onUnmounted(() => {
+  stopRefreshTimer()
 })
 </script>
 
