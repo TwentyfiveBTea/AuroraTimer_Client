@@ -12,14 +12,13 @@ on:
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
         include:
           - os: windows-latest
             platform: win
-            target: nsis
           - os: macos-latest
             platform: mac
-            target: dmg
 
     runs-on: ${{ matrix.os }}
 
@@ -37,7 +36,7 @@ jobs:
         run: npm ci
 
       - name: Build ${{ matrix.platform }} app
-        run: npm run electron:build -- --${{ matrix.platform }}
+        run: npm run electron:build
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
