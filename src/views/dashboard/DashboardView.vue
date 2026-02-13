@@ -179,13 +179,13 @@
             <!-- Weekly Duration -->
             <div class="stat-item stat-item--large">
               <span class="stat-label">本周需打卡</span>
-              <span class="stat-value">18<span class="stat-unit">h</span></span>
+              <span class="stat-value">{{ targetDuration }}<span class="stat-unit">h</span></span>
             </div>
             
             <!-- Active Members -->
             <div class="stat-item">
               <span class="stat-label">当前在线人数</span>
-              <span class="members-count">12人</span>
+              <span class="members-count">{{ timingUsersCount }}人</span>
             </div>
             
             <!-- Studio Duty -->
@@ -240,6 +240,10 @@ import { useAuthStore } from '@/stores/auth'
 const timerStore = useTimerStore()
 const authStore = useAuthStore()
 
+// ============ 后端数据 ============
+const targetDuration = ref(18) // 目标时长（小时），默认18h
+const timingUsersCount = ref(0) // 当前在线人数
+
 // ============ GitHub 下拉菜单 ============
 const isGithubMenuOpen = ref(false)
 
@@ -264,12 +268,16 @@ const pageClockTime = computed(() => {
   return timerStore.pageClockTime || { hours: 0, minutes: 0, seconds: 0 }
 })
 
-const WEEK_TARGET_HOURS = 18
+// 周进度百分比
+// 修改：优先使用服务器返回的 weekTotalSeconds，确保与排行榜一致
 const weekProgressPercentage = computed(() => {
-  const clockInTime = timerStore.currentTime // 打卡时长（秒）
-  const targetSeconds = WEEK_TARGET_HOURS * 3600
-  const percentage = (clockInTime / targetSeconds) * 100
-  return Math.min(percentage, 100) // 最高100%
+  // 使用服务器返回的本周总时间，而不是本地 currentTime（本地时间会有累积误差）
+  const targetHours = targetDuration.value || 18
+  const targetSeconds = targetHours * 3600
+  // 优先使用服务器时间，其次使用本地时间
+  const totalSeconds = timerStore.serverStatus?.weekTotalSeconds || timerStore.currentTime
+  const percentage = (totalSeconds / targetSeconds) * 100
+  return Math.min(Math.floor(percentage), 100) // 最高100%，向下取整
 })
 
 // 登录时长格式化
@@ -330,25 +338,126 @@ function handleResumeFromAFK() {
   timerStore.resumeTimer()
 }
 
+// ============ 获取后端数据 ============
+async function fetchDashboardData() {
+  try {
+    // 获取目标时长
+    const target = await timerStore.fetchTargetDuration()
+    if (target !== null) {
+      // 目标时长是秒，转换为小时
+      targetDuration.value = Math.round(target / 3600)
+    }
+    
+    // 获取当前在线人数
+    const count = await timerStore.fetchTimingUsersCount()
+    if (count !== null && count !== undefined) {
+      timingUsersCount.value = count
+    }
+  } catch (error) {
+    console.error('获取仪表盘数据失败:', error)
+  }
+}
+
 // ============ 生命周期 ============
 
 onMounted(async () => {
+  console.log('[Dashboard] onMounted 开始')
+  console.log('[Dashboard] authStore.token:', authStore.token ? '存在' : '不存在')
+  console.log('[Dashboard] authStore.user:', authStore.user ? '存在' : '不存在')
+  console.log('[Dashboard] authStore.isAuthenticated:', authStore.isAuthenticated)
+  console.log('[Dashboard] timerStore.isRunning:', timerStore.isRunning)
+  console.log('[Dashboard] timerStore.currentTime:', timerStore.currentTime)
+  
   // 启动实时时间更新（每秒更新）
   updateDateTime()
   timeInterval = setInterval(updateDateTime, 1000)
   
-  // 如果用户已登录，自动启动计时器
-  if (authStore.isAuthenticated && !timerStore.isRunning) {
-    timerStore.startTimer()
+  // 检查并恢复登录状态
+  if (authStore.token && !authStore.user) {
+    console.log('[Dashboard] 检测到有 token 但无用户信息，尝试恢复...')
+    await authStore.fetchUser()
   }
   
-  // 如果计时器已在运行（登录时已启动），初始化挂机检测
+  // 如果用户已登录，先获取后端计时状态
+  if (authStore.isAuthenticated) {
+    console.log('[Dashboard] 获取后端计时状态...')
+    await timerStore.fetchTimerStatus()
+    console.log('[Dashboard] 后端计时状态:', timerStore.serverStatus)
+    
+    // 检查本地 localStorage 状态
+    const savedTimerState = JSON.parse(localStorage.getItem('timer_state') || '{}')
+    const localWasRunning = savedTimerState.isRunning === true && savedTimerState.isPaused !== true
+    console.log('[Dashboard] 本地保存的计时状态:', savedTimerState)
+    console.log('[Dashboard] 本地是否在计时:', localWasRunning)
+    
+    // 检查后端状态是否有效
+    const hasBackendStatus = timerStore.serverStatus && 
+                             (timerStore.serverStatus.isTiming !== undefined || 
+                              timerStore.serverStatus.status !== undefined)
+    
+    if (hasBackendStatus) {
+      console.log('[Dashboard] 后端 isTiming:', timerStore.serverStatus.isTiming)
+      console.log('[Dashboard] 后端 status:', timerStore.serverStatus.status)
+      console.log('[Dashboard] 后端 weekTotalSeconds:', timerStore.serverStatus.weekTotalSeconds)
+      console.log('[Dashboard] 本地 isRunning:', timerStore.isRunning)
+      
+      // 如果后端显示正在计时（兼容 isTiming=true 或 status='RUNNING'），恢复计时器状态
+      const isBackendRunning = timerStore.serverStatus.isTiming === true || 
+                               timerStore.serverStatus.status === 'RUNNING'
+      
+      // 检查后端是否有有效的计时数据
+      const hasValidTimeData = timerStore.serverStatus.weekTotalSeconds > 0
+      
+      // 只有在本地之前在计时的情况下才自动恢复
+      // 避免用户主动停止计时后，刷新页面计时器又自动开始
+      if (localWasRunning && isBackendRunning) {
+        console.log('[Dashboard] 本地和后端都显示正在计时，恢复计时器...')
+        timerStore.restoreTimerState(true) // 强制恢复
+      } else if (!localWasRunning && isBackendRunning) {
+        console.log('[Dashboard] 本地已停止计时，但后端显示正在计时，不自动恢复')
+        // 重置后端状态，避免显示错误的计时状态
+        timerStore.serverStatus.isTiming = false
+        timerStore.serverStatus.status = 'STOPPED'
+      } else if (hasValidTimeData && !timerStore.isRunning) {
+        // 🔑 关键：只有本地没在运行时才启动，如果是恢复模式则不启动
+        console.log('[Dashboard] 后端有计时数据且本地未运行，启动计时器...')
+        timerStore.startTimer()
+      } else if (hasValidTimeData && timerStore.isRunning) {
+        // 本地已在运行，直接恢复
+        console.log('[Dashboard] 本地已在运行，恢复计时器...')
+        timerStore.restoreTimerState(true)
+      } else if (!timerStore.isRunning && !hasValidTimeData) {
+        // 都没有计时数据，启动新计时
+        console.log('[Dashboard] 启动新计时器...')
+        timerStore.startTimer()
+      } else {
+        console.log('[Dashboard] 保持当前状态，不做操作')
+      }
+    } else {
+      // 无法获取后端状态，使用本地状态作为后备
+      // 但只有在本地上一次正在计时时才恢复
+      console.log('[Dashboard] 无法获取后端状态，检查本地状态...')
+      if (localWasRunning) {
+        console.log('[Dashboard] 本地状态显示正在计时，恢复计时器...')
+        timerStore.restoreTimerState(true)
+      } else if (!localWasRunning && authStore.isAuthenticated) {
+        // 本地未在计时，不自动启动（用户需要手动点击开始）
+        console.log('[Dashboard] 本地未在计时，不自动启动，等待用户手动开始')
+      }
+    }
+  }
+  
+  // 获取仪表盘数据（包括在线人数）
+  await fetchDashboardData()
+  
+  // 如果计时器已在运行，初始化挂机检测
   if (timerStore.isRunning && !timerStore.isPaused) {
     timerStore.initAFKDetection()
   }
   
   // 获取统计数据
   await timerStore.fetchStatistics()
+  console.log('[Dashboard] onMounted 完成')
   
   // 请求通知权限
   if ('Notification' in window && Notification.permission === 'default') {
@@ -362,7 +471,8 @@ onUnmounted(() => {
     clearInterval(timeInterval)
     timeInterval = null
   }
-  timerStore.cleanup()
+  // 注意：不再调用 timerStore.cleanup()
+  // 计时器现在是全局的，在 App.vue 中管理，页面切换时不会停止
 })
 </script>
 
