@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "electron": "electron .",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run build && electron-builder --mac --$ARCH"
+    "electron:build": "npm run build && electron-builder --mac"
   },
   "dependencies": {
     "@vueuse/core": "^10.7.0",
@@ -39,7 +39,13 @@
       "electron/**"
     ],
     "mac": {
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
     },
     "win": {
       "target": "nsis"
