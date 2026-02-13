@@ -223,11 +223,12 @@
                     type="text"
                     class="form-input filter-input-small"
                     placeholder="如：2024"
+                    @change="searchMembers"
                   />
                 </div>
                 <div class="filter-group-small">
                   <label class="filter-label">方向</label>
-                  <select v-model="filterDirection" class="form-input filter-input-small">
+                  <select v-model="filterDirection" class="form-input filter-input-small" @change="searchMembers">
                     <option value="">全部</option>
                     <option v-for="dir in DIRECTION_OPTIONS" :key="dir.value" :value="dir.value">
                       {{ dir.label }}
@@ -236,12 +237,13 @@
                 </div>
                 <div class="filter-group-small">
                   <label class="filter-label">类型</label>
-                  <select v-model="filterMemberType" class="form-input filter-input-small">
+                  <select v-model="filterMemberType" class="form-input filter-input-small" @change="searchMembers">
                     <option value="all">全部</option>
-                    <option value="formal">正式</option>
-                    <option value="probationary">考核</option>
+                    <option value="formal">正式成员</option>
+                    <option value="probationary">考核成员</option>
                   </select>
                 </div>
+                
                 <button class="select-all-btn" @click="toggleSelectAll" :class="{ 'select-all-btn--active': isSelectAll }">
                   <span class="material-symbols-outlined">{{ isSelectAll ? 'check_circle' : 'radio_button_unchecked' }}</span>
                   <span>{{ isSelectAll ? '取消全选' : '全选' }}</span>
@@ -277,7 +279,7 @@
 
             <div class="member-list">
               <div
-                v-for="member in filteredMembers"
+                v-for="member in members"
                 :key="member.id"
                 class="member-item"
                 :class="{ 'member-item--selected': selectedMembers.includes(member.id) }"
@@ -288,6 +290,8 @@
                 </div>
                 <div class="member-item__info">
                   <span class="member-item__name">{{ member.name }}</span>
+                  <DirectionBadge :direction="member.direction" size="small" />
+                  <span class="member-item__target">当前目标时长: {{ member.defaultHours }}h</span>
                 </div>
                 <span class="material-symbols-outlined member-item__check">
                   {{ selectedMembers.includes(member.id) ? 'check_circle' : 'radio_button_unchecked' }}
@@ -305,14 +309,63 @@
         </div>
       </section>
     </main>
+
+    <!-- Download Progress Dialog -->
+    <Teleport to="body">
+      <Transition name="dialog">
+        <div v-if="showDownloadDialog" class="download-dialog-overlay" @click="handleCloseDownloadDialog">
+          <div class="download-dialog" @click.stop>
+            <div class="download-dialog__icon">
+              <div v-if="downloadStatus === 'completed'" class="download-dialog__icon--success">
+                <span class="material-symbols-outlined">check_circle</span>
+              </div>
+              <div v-else-if="downloadStatus === 'error'" class="download-dialog__icon--error">
+                <span class="material-symbols-outlined">error</span>
+              </div>
+              <div v-else class="download-dialog__icon--loading">
+                <span class="material-symbols-outlined animate-spin">sync</span>
+              </div>
+            </div>
+
+            <h3 class="download-dialog__title">
+              {{ downloadStatus === 'completed' ? '导出成功' : downloadStatus === 'error' ? '导出失败' : '正在导出数据' }}
+            </h3>
+
+            <p class="download-dialog__message">
+              {{ downloadStatus === 'completed' ? '数据已准备就绪，即将开始下载' : downloadStatus === 'error' ? '请稍后重试' : '请稍候...' }}
+            </p>
+
+            <div v-if="downloadStatus !== 'completed' && downloadStatus !== 'error'" class="download-dialog__progress">
+              <div class="progress-bar">
+                <div class="progress-bar__fill" :style="{ width: downloadProgress + '%' }"></div>
+              </div>
+              <span class="progress-bar__text">{{ downloadProgress }}%</span>
+            </div>
+
+            <button 
+              v-if="downloadStatus === 'completed' || downloadStatus === 'error'"
+              class="download-dialog__btn"
+              :class="downloadStatus === 'completed' ? 'download-dialog__btn--success' : 'download-dialog__btn--error'"
+              @click="handleCloseDownloadDialog"
+            >
+              {{ downloadStatus === 'completed' ? '完成' : '关闭' }}
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import NotificationIcons from '@/components/NotificationIcons.vue'
+import DirectionBadge from '@/components/DirectionBadge.vue'
 import { DIRECTION_OPTIONS } from '@/constants/directionColors.js'
+import { showWarning, showSuccess, showError } from '@/composables/useMessage'
+import { notificationAPI, timerAPI, adminAPI } from '@/api'
+import { formatTime } from '@/utils'
 
 const router = useRouter()
 
@@ -349,10 +402,16 @@ const exportGrade = ref('')
 const exportDirection = ref('')
 const exportMemberType = ref('all') // all, formal, probationary
 
+// Download progress dialog
+const showDownloadDialog = ref(false)
+const downloadProgress = ref(0)
+const downloadStatus = ref('preparing') // preparing, downloading, processing, completed, error
+
 // Member filter for set hours
 const filterGrade = ref('')
 const filterDirection = ref('')
 const filterMemberType = ref('all') // all, formal, probationary
+const searchKeyword = ref('')
 const isSelectAll = ref(false)
 
 const memberSearch = ref('')
@@ -370,27 +429,121 @@ const members = ref([
   { id: 5, name: '钱七', avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=QianQi', defaultHours: 18, grade: '2024', direction: 'design', memberType: 'formal' }
 ])
 
-// Filtered members
-const filteredMembers = computed(() => {
-  return members.value.filter(m => {
-    // Search filter
-    const matchesSearch = !memberSearch.value ||
-      m.name.toLowerCase().includes(memberSearch.value.toLowerCase())
+// Loading state for members
+const membersLoading = ref(false)
 
-    // Grade filter
-    const matchesGrade = !filterGrade.value ||
-      m.grade === filterGrade.value
+// 判断 API 响应是否成功
+function isSuccessCode(code) {
+  return code === 200 || code === '200' || code === '0000000' || code === '0'
+}
 
-    // Direction filter
-    const matchesDirection = !filterDirection.value ||
-      m.direction === filterDirection.value
+// Fetch members from API
+async function fetchMembers() {
+  membersLoading.value = true
+  try {
+    // 使用新的 API 获取成员周目标时长列表
+    const response = await adminAPI.getWeeklyTargetDuration({})
+    console.log('[Admin] 获取成员列表响应:', response)
+    
+    if (isSuccessCode(response.code)) {
+      // Map API data to local format
+      // weeklyTargetDuration 单位是秒，需要转换为小时
+      members.value = response.data.map((user, index) => ({
+        id: user.userId || index + 1,
+        userId: user.userId,
+        name: user.name || '',
+        avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+        defaultHours: user.weeklyTargetDuration ? user.weeklyTargetDuration / 3600 : 18, // Convert seconds to hours
+        grade: user.grade || '',
+        direction: user.direction || '',
+        memberType: user.memberType === 'formal' ? 'formal' : (user.memberType === 'probationary' ? 'probationary' : 'formal')
+      }))
+    } else if (response.code === 401 || response.code === '401') {
+      // Token 无效或过期
+      showWarning('管理员登录已过期，请重新登录')
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('admin_user')
+      router.push('/admin-login')
+    } else {
+      console.warn('获取成员列表失败:', response.message)
+      // Keep using mock data on error
+    }
+  } catch (error) {
+    console.error('获取成员列表失败:', error)
+    if (error.response?.status === 401) {
+      showWarning('管理员登录已过期，请重新登录')
+      localStorage.removeItem('admin_token')
+      localStorage.removeItem('admin_user')
+      router.push('/admin-login')
+    }
+    // Keep using mock data on error
+  } finally {
+    membersLoading.value = false
+  }
+}
 
-    // Member type filter
-    const matchesMemberType = filterMemberType.value === 'all' ||
-      m.memberType === filterMemberType.value
+// 搜索功能 - 根据筛选条件调用后端 API
+async function searchMembers() {
+  membersLoading.value = true
+  try {
+    // 构建查询参数
+    const params = {}
+    
+    // 添加年级筛选
+    if (filterGrade.value.trim()) {
+      params.grade = filterGrade.value.trim()
+    }
+    
+    // 添加方向筛选
+    if (filterDirection.value) {
+      params.direction = filterDirection.value
+    }
+    
+    // 添加类型筛选（正式/考核）
+    if (filterMemberType.value && filterMemberType.value !== 'all') {
+      params.memberType = filterMemberType.value
+    }
+    
+    console.log('[Admin] 搜索参数:', params)
+    
+    const response = await adminAPI.getWeeklyTargetDuration(params)
+    console.log('[Admin] 搜索结果:', response)
+    
+    if (isSuccessCode(response.code)) {
+      members.value = response.data.map((user, index) => ({
+        id: user.userId || index + 1,
+        userId: user.userId,
+        name: user.name || '',
+        avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+        defaultHours: user.weeklyTargetDuration ? user.weeklyTargetDuration / 3600 : 18,
+        grade: user.grade || '',
+        direction: user.direction || '',
+        memberType: user.memberType === 'formal' ? 'formal' : (user.memberType === 'probationary' ? 'probationary' : 'formal')
+      }))
+      // 搜索后清空选择
+      selectedMembers.value = []
+      isSelectAll.value = false
+      showSuccess(`找到 ${members.value.length} 条结果`)
+    }
+  } catch (error) {
+    console.error('搜索失败:', error)
+    showError('搜索失败，请稍后重试')
+  } finally {
+    membersLoading.value = false
+  }
+}
 
-    return matchesSearch && matchesGrade && matchesDirection && matchesMemberType
-  })
+// Page load fetch
+onMounted(() => {
+  // 检查管理员是否已登录
+  const adminToken = localStorage.getItem('admin_token')
+  if (!adminToken) {
+    showWarning('请先登录管理员账号')
+    router.push('/admin-login')
+    return
+  }
+  
+  fetchMembers()
 })
 
 function goBack() {
@@ -406,144 +559,265 @@ function toggleMember(id) {
   }
 }
 
+// 搜索功能 - 调用后端 API
+async function handleSearch() {
+  if (!searchKeyword.value.trim()) {
+    // 如果搜索关键词为空，刷新全部成员
+    await fetchMembers()
+    return
+  }
+  
+  membersLoading.value = true
+  try {
+    const response = await adminAPI.getWeeklyTargetDuration({
+      name: searchKeyword.value.trim()
+    })
+    console.log('[Admin] 搜索结果:', response)
+    
+    if (isSuccessCode(response.code)) {
+      members.value = response.data.map((user, index) => ({
+        id: user.userId || index + 1,
+        userId: user.userId,
+        name: user.name || '',
+        avatar: user.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user.userId}`,
+        defaultHours: user.weeklyTargetDuration ? user.weeklyTargetDuration / 3600 : 18,
+        grade: user.grade || '',
+        direction: user.direction || '',
+        memberType: user.memberType === 'formal' ? 'formal' : (user.memberType === 'probationary' ? 'probationary' : 'formal')
+      }))
+      // 搜索后清空选择
+      selectedMembers.value = []
+      isSelectAll.value = false
+      showSuccess(`找到 ${members.value.length} 条结果`)
+    }
+  } catch (error) {
+    console.error('搜索失败:', error)
+    showError('搜索失败，请稍后重试')
+  } finally {
+    membersLoading.value = false
+  }
+}
+
 function toggleSelectAll() {
   if (isSelectAll.value) {
     selectedMembers.value = []
     isSelectAll.value = false
   } else {
-    selectedMembers.value = filteredMembers.value.map(m => m.id)
+    selectedMembers.value = members.value.map(m => m.id)
     isSelectAll.value = true
   }
 }
 
 // Handle publish notification
-function handlePublishNotification() {
+async function handlePublishNotification() {
+  if (!formNotify.title || !formNotify.content) {
+    showWarning('请填写通知标题和内容')
+    return
+  }
+
   notifyLoading.value = true
   notifySuccess.value = false
 
-  // Simulate API call
-  setTimeout(() => {
-    const notification = {
-      id: Date.now(),
-      type: formNotify.type,
-      title: formNotify.title,
-      message: formNotify.content,
-      time: new Date().toISOString(),
-      meetingInfo: formNotify.type === 'meeting' && (formNotify.meetingLocation || formNotify.meetingTime) ? {
-        location: formNotify.meetingLocation,
-        time: formNotify.meetingTime
-      } : null,
-      cleaningInfo: formNotify.type === 'cleaning' && (formNotify.cleaningTime || formNotify.cleaningAssigned) ? {
-        time: formNotify.cleaningTime,
-        assigned: formNotify.cleaningAssigned
-      } : null
+  try {
+    // 将英文类型转换为中文
+    const typeMap = {
+      'system': '系统',
+      'event': '活动',
+      'meeting': '会议',
+      'cleaning': '值日',
+      'other': '其他'
     }
 
-    console.log('Published notification:', notification)
+    const response = await notificationAPI.createNotification({
+      type: typeMap[formNotify.type] || formNotify.type,
+      title: formNotify.title,
+      content: formNotify.content,
+      meetingLocation: formNotify.meetingLocation || null,
+      meetingTime: formNotify.meetingTime || null
+    })
 
-    notifyLoading.value = false
-    notifySuccess.value = true
+    if (isSuccessCode(response.code)) {
+      showSuccess('通知发布成功！')
+      notifySuccess.value = true
 
-    // Reset form after success
-    setTimeout(() => {
+      // Reset form after success
       formNotify.title = ''
       formNotify.content = ''
       formNotify.meetingLocation = ''
       formNotify.meetingTime = ''
       formNotify.cleaningTime = ''
       formNotify.cleaningAssigned = ''
-      notifySuccess.value = false
-    }, 2000)
-  }, 1000)
+
+      setTimeout(() => {
+        notifySuccess.value = false
+      }, 2000)
+    } else {
+      showWarning(response.message || '通知发布失败')
+    }
+  } catch (error) {
+    console.error('发布通知失败:', error)
+    showError('通知发布失败，请检查网络连接')
+  } finally {
+    notifyLoading.value = false
+  }
 }
 
 // Handle export Excel
-function handleExportExcel() {
+async function handleExportExcel() {
   if (!exportDateStart.value || !exportDateEnd.value) {
-    alert('请选择导出时间段的起止日期')
+    showWarning('请选择导出时间段的起止日期')
     return
   }
 
-  exportLoading.value = true
+  // Show download progress dialog
+  showDownloadDialog.value = true
+  downloadProgress.value = 0
+  downloadStatus.value = 'preparing'
 
-  // Simulate Excel generation with filters
-  setTimeout(() => {
-    // Get filter descriptions for filename
-    const gradeFilter = exportGrade.value ? `年级-${exportGrade.value}` : ''
-    const directionFilter = exportDirection.value ? `方向-${exportDirection.value}` : ''
-    const memberTypeFilter = exportMemberType.value !== 'all' ? `类型-${exportMemberType.value === 'formal' ? '正式成员' : '考核成员'}` : ''
+  // Simulate initial progress
+  const progressInterval = setInterval(() => {
+    if (downloadProgress.value < 30) {
+      downloadProgress.value += 10
+    }
+  }, 100)
 
-    // Build filter description
-    const filters = [gradeFilter, directionFilter, memberTypeFilter].filter(f => f).join('_')
-
-    // Create CSV data with filters
-    const headers = ['姓名', '年级', '方向', '类型', '日期', '打卡时间', '状态']
-    const data = [
-      ['张三', exportGrade.value || '2024', exportDirection.value || '前端', exportMemberType.value === 'formal' ? '正式成员' : (exportMemberType.value === 'probationary' ? '考核成员' : '正式成员'), exportDateStart.value, '09:00:00', '正常'],
-      ['张三', exportGrade.value || '2024', exportDirection.value || '前端', exportMemberType.value === 'formal' ? '正式成员' : (exportMemberType.value === 'probationary' ? '考核成员' : '正式成员'), exportDateEnd.value, '09:15:00', '迟到'],
-      ['李四', exportGrade.value || '2024', exportDirection.value || '后端', exportMemberType.value === 'formal' ? '正式成员' : (exportMemberType.value === 'probationary' ? '考核成员' : '正式成员'), exportDateStart.value, '08:45:00', '正常'],
-      ['李四', exportGrade.value || '2024', exportDirection.value || '后端', exportMemberType.value === 'formal' ? '正式成员' : (exportMemberType.value === 'probationary' ? '考核成员' : '正式成员'), exportDateEnd.value, '08:50:00', '正常']
-    ]
-
-    // Create CSV content
-    let csvContent = headers.join(',') + '\n'
-    data.forEach(row => {
-      csvContent += row.join(',') + '\n'
+  try {
+    const response = await timerAPI.exportTimerData({
+      startTime: exportDateStart.value,
+      endTime: exportDateEnd.value,
+      grade: exportGrade.value || undefined,
+      direction: exportDirection.value || undefined,
+      position: exportMemberType.value !== 'all' ? exportMemberType.value : undefined
     })
 
-    // Download file
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(blob)
+    clearInterval(progressInterval)
+    downloadProgress.value = 60
+    downloadStatus.value = 'processing'
 
-    // Include filters in filename if any are selected
-    const fileName = filters
-      ? `打卡数据_${exportDateStart.value}_至_${exportDateEnd.value}_${filters}.csv`
-      : `打卡数据_${exportDateStart.value}_至_${exportDateEnd.value}.csv`
+    if (isSuccessCode(response.code)) {
+      const data = response.data
 
-    link.download = fileName
-    link.click()
-    URL.revokeObjectURL(link.href)
+      // Get filter descriptions for filename
+      const gradeFilter = exportGrade.value ? `年级-${exportGrade.value}` : ''
+      const directionFilter = exportDirection.value ? `方向-${exportDirection.value}` : ''
+      const memberTypeFilter = exportMemberType.value !== 'all' ? `类型-${exportMemberType.value === 'formal' ? '正式成员' : '考核成员'}` : ''
 
+      // Build filter description
+      const filters = [gradeFilter, directionFilter, memberTypeFilter].filter(f => f).join('_')
+
+      // Create CSV content if data exists
+      if (data && data.length > 0) {
+        downloadProgress.value = 80
+
+        const headers = ['姓名', '年级', '方向', '职位', '打卡时间', '达标状态']
+        const csvRows = [headers.join(',')]
+
+        data.forEach(row => {
+          csvRows.push([
+            row.name || '',
+            row.grade || '',
+            row.direction || '',
+            row.position || '',
+            row.signInTime || '',
+            row.status || ''
+          ].join(','))
+        })
+
+        const csvContent = csvRows.join('\n')
+
+        // Download file
+        const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' })
+        const link = document.createElement('a')
+        link.href = URL.createObjectURL(blob)
+
+        const fileName = filters
+          ? `打卡数据_${exportDateStart.value}_至_${exportDateEnd.value}_${filters}.csv`
+          : `打卡数据_${exportDateStart.value}_至_${exportDateEnd.value}.csv`
+
+        link.download = fileName
+        link.click()
+        URL.revokeObjectURL(link.href)
+
+        downloadProgress.value = 100
+        downloadStatus.value = 'completed'
+        showSuccess('数据导出成功')
+      } else {
+        downloadProgress.value = 100
+        downloadStatus.value = 'completed'
+        showWarning('暂无数据导出')
+      }
+    } else {
+      downloadStatus.value = 'error'
+      showWarning(response.message || '导出失败')
+    }
+  } catch (error) {
+    clearInterval(progressInterval)
+    console.error('导出数据失败:', error)
+    downloadStatus.value = 'error'
+    showError('导出失败，请检查网络连接')
+  } finally {
     exportLoading.value = false
-  }, 1500)
+  }
+}
+
+// Handle close download dialog
+function handleCloseDownloadDialog() {
+  showDownloadDialog.value = false
+  downloadProgress.value = 0
+  downloadStatus.value = 'preparing'
 }
 
 // Handle set member hours
-function handleSetMemberHours() {
-  if (selectedMembers.value.length === 0) return
+async function handleSetMemberHours() {
+  if (selectedMembers.value.length === 0) {
+    showWarning('请选择要修改的成员')
+    return
+  }
 
   setHoursLoading.value = true
   setHoursSuccess.value = false
 
-  setTimeout(() => {
-    const updates = selectedMembers.value.map(id => {
+  try {
+    // Prepare member data for API
+    // 使用新接口格式: { userId, newWeeklyTargetDuration }
+    const membersData = selectedMembers.value.map(id => {
       const member = members.value.find(m => m.id === id)
       return {
-        id,
-        name: member.name,
-        oldHours: member.defaultHours,
-        newHours: setHours.value
+        userId: String(member.userId || member.id),
+        newWeeklyTargetDuration: setHours.value * 3600 // Convert hours to seconds
       }
     })
 
-    console.log('Updated member hours:', updates)
+    const response = await adminAPI.editWeeklyTargetDuration(membersData)
 
-    // Update local data
-    selectedMembers.value.forEach(id => {
-      const member = members.value.find(m => m.id === id)
-      if (member) {
-        member.defaultHours = setHours.value
-      }
-    })
+    if (isSuccessCode(response.code)) {
+      // Update local data
+      selectedMembers.value.forEach(id => {
+        const member = members.value.find(m => m.id === id)
+        if (member) {
+          member.defaultHours = setHours.value
+        }
+      })
 
+      showSuccess('打卡时间设置成功！')
+      setHoursSuccess.value = true
+
+      // Clear selection
+      selectedMembers.value = []
+      isSelectAll.value = false
+
+      setTimeout(() => {
+        setHoursSuccess.value = false
+      }, 2000)
+    } else {
+      showWarning(response.message || '设置失败')
+    }
+  } catch (error) {
+    console.error('设置成员打卡时间失败:', error)
+    showError('设置失败，请检查网络连接')
+  } finally {
     setHoursLoading.value = false
-    setHoursSuccess.value = true
-
-    setTimeout(() => {
-      setHoursSuccess.value = false
-    }, 2000)
-  }, 1000)
+  }
 }
 </script>
 
@@ -1099,6 +1373,47 @@ function handleSetMemberHours() {
   font-size: 18px;
 }
 
+.search-box {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.search-input {
+  width: 160px;
+  height: 34px;
+  padding: 0 var(--spacing-sm);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-base);
+  color: var(--color-text-main);
+  font-size: 13px;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background-color: var(--color-bg-base);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.search-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}
+
 .member-item {
   display: flex;
   align-items: center;
@@ -1145,6 +1460,14 @@ function handleSetMemberHours() {
   font-size: 14px;
   font-weight: 500;
   color: var(--color-text-main);
+}
+
+.member-item__target {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  background-color: var(--color-bg-tertiary);
+  padding: 2px 8px;
+  border-radius: 12px;
 }
 
 .member-item__hours {
@@ -1402,6 +1725,193 @@ function handleSetMemberHours() {
 
   .action-btn {
     width: 100%;
+  }
+}
+
+/* Download Progress Dialog */
+.download-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 20px;
+}
+
+.download-dialog {
+  background-color: var(--color-bg-panel, #ffffff);
+  border-radius: 20px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15), 0 8px 24px rgba(0, 0, 0, 0.1);
+  max-width: 360px;
+  width: 100%;
+  padding: 32px;
+  text-align: center;
+  position: relative;
+}
+
+.download-dialog__icon {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.download-dialog__icon--loading,
+.download-dialog__icon--success,
+.download-dialog__icon--error {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-dialog__icon--loading {
+  background-color: rgba(212, 163, 115, 0.15);
+}
+
+.download-dialog__icon--loading .material-symbols-outlined {
+  font-size: 32px;
+  color: var(--color-primary, #d4a373);
+}
+
+.download-dialog__icon--success {
+  background-color: rgba(139, 157, 119, 0.15);
+}
+
+.download-dialog__icon--success .material-symbols-outlined {
+  font-size: 48px;
+  color: var(--color-success, #8B9D77);
+}
+
+.download-dialog__icon--error {
+  background-color: rgba(220, 53, 69, 0.12);
+}
+
+.download-dialog__icon--error .material-symbols-outlined {
+  font-size: 48px;
+  color: var(--color-danger, #dc3545);
+}
+
+.download-dialog__title {
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text-main, #1a1a1a);
+}
+
+.download-dialog__message {
+  margin: 0 0 24px;
+  font-size: 14px;
+  color: var(--color-text-secondary, #666);
+}
+
+.download-dialog__progress {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background-color: var(--color-bg-base, #f0f0f0);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-primary, #d4a373), #e8c4a0);
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.progress-bar__text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary, #d4a373);
+  min-width: 40px;
+  text-align: right;
+}
+
+.download-dialog__btn {
+  width: 100%;
+  padding: 14px 24px;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.download-dialog__btn--success {
+  background-color: var(--color-success, #8B9D77);
+  color: white;
+}
+
+.download-dialog__btn--success:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.download-dialog__btn--error {
+  background-color: var(--color-danger, #dc3545);
+  color: white;
+}
+
+.download-dialog__btn--error:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+/* Spin animation */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Dialog transition */
+.dialog-enter-active {
+  animation: dialog-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dialog-leave-active {
+  animation: dialog-out 0.25s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes dialog-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.9) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes dialog-out {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
   }
 }
 </style>
