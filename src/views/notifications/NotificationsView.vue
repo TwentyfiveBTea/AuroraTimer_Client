@@ -33,8 +33,14 @@
         
         <!-- Content Area -->
         <div class="notifications-page__content">
+          <!-- Loading State -->
+          <div v-if="isLoading" class="notifications-loading">
+            <div class="notifications-loading__spinner"></div>
+            <p>加载中...</p>
+          </div>
+          
           <!-- Notifications List -->
-          <div class="notifications-list" v-if="Object.keys(groupedNotifications).length > 0">
+          <div class="notifications-list" v-else-if="Object.keys(groupedNotifications).length > 0">
             <!-- Dynamic Sections by Date -->
             <div 
               v-for="(notifications, dateKey) in groupedNotifications" 
@@ -107,6 +113,12 @@
               </div>
             </div>
           </div>
+          <!-- Empty States -->
+          <div v-else-if="notifications.length === 0" class="notifications-empty">
+            <span class="material-symbols-outlined notifications-empty__icon">inbox</span>
+            <p class="notifications-empty__text">暂无通知</p>
+            <p class="notifications-empty__hint">新的通知将会在这里显示</p>
+          </div>
           <div v-else class="notifications-empty">
             <span class="material-symbols-outlined notifications-empty__icon">search_off</span>
             <p class="notifications-empty__text">未找到匹配的通知</p>
@@ -124,55 +136,40 @@
             </div>
             
             <div class="leaderboard-list">
-              <!-- Leaderboard Item 1 -->
-              <div class="leaderboard-item">
+              <!-- 使用 v-for 循环渲染处刑榜数据 -->
+              <div 
+                v-for="item in punishmentList" 
+                :key="item.id"
+                class="leaderboard-item"
+              >
                 <div class="leaderboard-item__avatar">
                   <div 
                     class="leaderboard-item__avatar-image" 
-                    style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAnvBnOwNv71ZezHWZy6aWcIRBCTqFnkjesapwbSb8kxoTZmQQuZx6Z-m2g90oRLxSA5eWXn_RRUS-Wk-txjj0SSZOMioV2O08F9u4XQQrmZn3057tg1mIYWUXZkCRoHKeGNWMK6ZyIHo_2CpIenySKm9eSnBwH8GoYIbJi4_MkWJHORIOvx2LYkDZYqcJwsoi08cKmFRGCHhFBxPRancZcxANpKUygvPPyrV9suIbxbf-RLGh3Hu1iyfDjtcP-dZDFuGQBg29bUF_k')"
+                    :class="{ 'leaderboard-item__avatar-image--grayscale': item.status === 'disabled' }"
+                    :style="item.avatar ? { backgroundImage: `url(${item.avatar})` } : {}"
                   ></div>
-                  <div class="leaderboard-item__status leaderboard-item__status--danger">
-                    <span class="material-symbols-outlined">timer_off</span>
+                  <div 
+                    class="leaderboard-item__status"
+                    :class="`leaderboard-item__status--${item.status}`"
+                  >
+                    <span class="material-symbols-outlined">
+                      {{ item.status === 'danger' ? 'timer_off' : item.status === 'warning' ? 'hourglass_empty' : 'block' }}
+                    </span>
                   </div>
                 </div>
                 <div class="leaderboard-item__info">
-                  <h4 class="leaderboard-item__name">Michael Scott</h4>
-                  <p class="leaderboard-item__hours">上周打卡: 32h</p>
+                  <div class="leaderboard-item__main">
+                    <span class="leaderboard-item__name">{{ item.name }}</span>
+                    <DirectionBadge :direction="item.direction" displayMode="short" class="leaderboard-item__badge" />
+                  </div>
+                  <span class="leaderboard-item__hours">上周打卡: {{ item.weekHours }}h</span>
                 </div>
               </div>
               
-              <!-- Leaderboard Item 2 -->
-              <div class="leaderboard-item">
-                <div class="leaderboard-item__avatar">
-                  <div 
-                    class="leaderboard-item__avatar-image" 
-                    style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD8t2uhQ1iwT2b9AWL0ClblmNdN9aIDVDpRu7YKp4-WeyAUmxvlnH-PXBNQnZipTPxSLO2iLtj-qYfLoFQ87KR8lWDgH9DRq_uHsSL6hET9-TNoweJWzRlbkZI18JinqUcTlOgKZhMuDN8r8f6TLdkf6Gai9vzFdJU2h7rSO8Yerf7IPtlEcoLmuKYdRLykfrijwUH_CyNruTsjyDrvmzWN1T1ybntnuDifbPO7KLb8wnRySf0LRHWNk6VMWx1wzxGLNSQpPcHzW4eb')"
-                  ></div>
-                  <div class="leaderboard-item__status leaderboard-item__status--warning">
-                    <span class="material-symbols-outlined">hourglass_empty</span>
-                  </div>
-                </div>
-                <div class="leaderboard-item__info">
-                  <h4 class="leaderboard-item__name">Pam Beesly</h4>
-                  <p class="leaderboard-item__hours">上周打卡: 28h</p>
-                </div>
-              </div>
-              
-              <!-- Leaderboard Item 3 -->
-              <div class="leaderboard-item">
-                <div class="leaderboard-item__avatar">
-                  <div 
-                    class="leaderboard-item__avatar-image leaderboard-item__avatar-image--grayscale" 
-                    style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD-RA-crptscEZ16ZNMYic2EHojP_EyvXP5T6yK4tbqPlEoLZwXnWZ7EFGVD-AhcVLbrNGjBJva1NORr0zmdEScYgkwr14nggnK29by2f3je7QRSy56lJclUm5UVrclkh81iiC7DKvVATNLkzLA4szPZ5GtU5hHkYnSIusQYuwZOFnS5BsZmMVlM5FhCxKuRptMV-44OuDOSBAfM-jatidv6YxB4lRaMRKk_GkrvsxPIO3RFsLke8tY7sNfSeQwpG2cx6g_iptue0e2')"
-                  ></div>
-                  <div class="leaderboard-item__status leaderboard-item__status--disabled">
-                    <span class="material-symbols-outlined">block</span>
-                  </div>
-                </div>
-                <div class="leaderboard-item__info">
-                  <h4 class="leaderboard-item__name">Ryan Howard</h4>
-                  <p class="leaderboard-item__hours">上周打卡: 15h</p>
-                </div>
+              <!-- 空状态 -->
+              <div v-if="punishmentList.length === 0 && !isLoading" class="leaderboard-empty">
+                <span class="material-symbols-outlined">group_off</span>
+                <p>暂无处刑榜数据</p>
               </div>
             </div>
           </aside>
@@ -183,125 +180,123 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { notificationAPI, timerAPI } from '@/api'
 import NotificationIcons from '@/components/NotificationIcons.vue'
+import DirectionBadge from '@/components/DirectionBadge.vue'
 
 // 搜索关键词
 const searchQuery = ref('')
 
-// 通知数据 - 使用ISO日期时间格式
-const notifications = ref([
-  {
-    id: 1,
-    type: 'system',
-    title: '系统维护计划',
-    message: '服务器将于本周五凌晨 2:00 (UTC) 进行例行维护。请在此之前保存并同步您的工作。',
-    time: '2025-02-07T02:00:00',
-    read: false,
-    dateKey: '2025-02-07'
-  },
-  {
-    id: 2,
-    type: 'meeting',
-    title: '每周设计评审',
-    message: '每周设计同步即将开始。我们将评审新的 <strong>移动端仪表盘</strong> 方案。',
-    time: '2025-02-07T10:30:00',
-    read: false,
-    dateKey: '2025-02-07',
-    meetingInfo: {
-      location: '会议室 A',
-      time: '14:00'
-    },
-    actions: [
-      { label: '加入会议', action: 'join' },
-      { label: '详情', action: 'details', secondary: true }
-    ],
-    participants: [
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuD4KPiGgTxPTsbxUfCRZtsABfPZW3yfkB9zNTFJi25S7W4jhLJgfx0GtVHAE272Yv1pQwV0ykxVwaly5PA7fwrcD3uveUTFZAZhVMHuiYAvZDktE_5uuP-0D-KOKgQZxSuVVjwMWZqjsL3kLgy0IsEkxnKADQ62uDKoq6K-Mqa3utLeTbZjbgUFm9JEkwWYI35AuSX6_H3967_FXwUqYZgHBRXcqWmYOrL_uqK3-hcMoqAV9kmT2qJwBZznVAHe_VgZUYmIIijZY642',
-      'https://lh3.googleusercontent.com/aida-public/AB6AXuDv8SL2ecOrHf4tp4GF2cbR4lBJSe1e75lGh3WR-e1XteIT6klyK2iiR8cYukzzkP_JeQncdaqt4NhXiZvmfM1R1IR7iDpwRc5ToREbj-nNEeOIOBZ4Bq_Je4F4g9oyQMA2QgYvRykT0MDXrMf3DLKk3oVIq6SasKvWzG979yCBEh52BQxYbBw47TeSCu7sd6eiKQyFZWI8qbsQIp4xJeWaXinkWIIhklCjGTQE6wm4oZcxBz7mSzWmvEv94Q4lITgAHKhyjnuKgPhw'
-    ]
-  },
-  {
-    id: 3,
-    type: 'event',
-    title: '工作室周年庆活动',
-    message: '为庆祝工作室成立五周年，我们将举办特别庆祝活动，欢迎所有成员参加！',
-    time: '2025-02-07T14:00:00',
-    read: false,
-    dateKey: '2025-02-07',
-    actions: [
-      { label: '报名参加', action: 'join' },
-      { label: '了解更多', action: 'details', secondary: true }
-    ]
-  },
-  {
-    id: 4,
-    type: 'cleaning',
-    title: '本周值日安排',
-    message: '本周工作室值日安排已发布，请各位同事按时完成清洁工作。',
-    time: '2025-02-06T09:00:00',
-    read: false,
-    dateKey: '2025-02-06',
-    cleaningInfo: {
-      time: '周一至周五 18:00-19:00',
-      assigned: '第一组: 张三、李四'
-    }
-  },
-  {
-    id: 5,
-    type: 'other',
-    title: '工作室订阅续费提醒',
-    message: '您的创意云订阅将于 2025-02-10 到期，请及时续费以继续使用全部功能。',
-    time: '2025-02-05T12:00:00',
-    read: true,
-    dateKey: '2025-02-05'
-  },
-  {
-    id: 6,
-    type: 'meeting',
-    title: '项目进度汇报会议',
-    message: '请各部门负责人准备本周进度汇报材料，准时参加项目会议。',
-    time: '2025-02-04T08:00:00',
-    read: true,
-    dateKey: '2025-02-04',
-    meetingInfo: {
-      location: '线上会议',
-      time: '10:00'
-    }
-  },
-  {
-    id: 7,
-    type: 'system',
-    title: '新功能上线通知',
-    message: '全新的 <strong>团队协作面板</strong> 功能现已上线，帮助您更好地管理团队任务。',
-    time: '2025-02-03T10:00:00',
-    read: true,
-    dateKey: '2025-02-03'
-  },
-  {
-    id: 8,
-    type: 'cleaning',
-    title: '周末清洁检查结果',
-    message: '上周值日工作检查完成，整体卫生状况良好继续保持！',
-    time: '2025-02-02T14:00:00',
-    read: true,
-    dateKey: '2025-02-02'
-  },
-  {
-    id: 9,
-    type: 'event',
-    title: '技术分享会报名',
-    message: '本周五将举办前端性能优化技术分享会，名额有限，先到先得！',
-    time: '2025-02-01T09:00:00',
-    read: true,
-    dateKey: '2025-02-01'
+// 加载状态
+const isLoading = ref(false)
+
+// 通知数据
+const notifications = ref([])
+
+// 处刑榜数据
+const punishmentList = ref([])
+
+// 类型映射：将后端返回的中文类型转换为英文
+function mapTypeToEnglish(chineseType) {
+  const typeMap = {
+    '系统': 'system',
+    '系统通知': 'system',
+    '会议': 'meeting',
+    '会议通知': 'meeting',
+    '活动': 'event',
+    '活动通知': 'event',
+    '值日': 'cleaning',
+    '清洁': 'cleaning',
+    '其他': 'other',
+    '其他通知': 'other'
   }
-])
+  return typeMap[chineseType] || 'other'
+}
+
+// 加载通知数据
+async function fetchNotifications() {
+  isLoading.value = true
+  try {
+    const response = await notificationAPI.getNotifications()
+    const code = response?.code
+    const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
+    
+    if (isSuccessCode && response.data) {
+      // 转换后端数据格式为前端格式
+      notifications.value = response.data.map((item, index) => ({
+        id: index + 1,
+        type: mapTypeToEnglish(item.type), // 转换类型
+        title: item.title || '',
+        message: item.content || '',
+        time: item.createTime || new Date().toISOString(),
+    read: false,
+        dateKey: formatDateKey(item.createTime),
+        meetingInfo: item.meetingLocation ? {
+          location: item.meetingLocation,
+          time: item.meetingTime || ''
+        } : null
+      }))
+      console.log('[Notifications] 通知数据加载成功:', notifications.value.length)
+    }
+  } catch (error) {
+    console.error('[Notifications] 加载通知失败:', error)
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// 加载处刑榜数据
+async function fetchPunishmentList() {
+  try {
+    const response = await timerAPI.getPunishmentList()
+    const code = response?.code
+    const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
+    
+    if (isSuccessCode && response.data) {
+      // 调试：打印原始数据
+      console.log('[Notifications] 处刑榜原始数据:', response.data)
+      
+      punishmentList.value = response.data.map((item, index) => ({
+        ...item,
+        id: index + 1,
+        // lastWeekSignInTime 单位是秒，转换为小时
+        weekHours: Math.round(item.lastWeekSignInTime / 3600 * 10) / 10,
+        // 根据上周打卡时间判断状态
+        status: item.lastWeekSignInTime === 0 ? 'danger' : 
+                item.lastWeekSignInTime < 3600 * 10 ? 'warning' : 'disabled'
+      }))
+      console.log('[Notifications] 处刑榜数据加载成功:', punishmentList.value.length)
+    }
+  } catch (error) {
+    console.error('[Notifications] 加载处刑榜失败:', error)
+  }
+}
+
+// 页面加载时获取数据
+onMounted(async () => {
+  await Promise.all([
+    fetchNotifications(),
+    fetchPunishmentList()
+  ])
+})
+
+// 格式化日期为 dateKey (yyyy-mm-dd)
+function formatDateKey(dateString) {
+  if (!dateString) return ''
+  const date = new Date(dateString)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
 
 // 按日期分组通知
 const groupedNotifications = computed(() => {
   const groups = {}
   const filtered = notifications.value.filter(notification => {
+    // 过滤掉没有有效日期的通知
+    if (!notification.dateKey) return false
     if (!searchQuery.value) return true
     const query = searchQuery.value.toLowerCase()
     return (
@@ -690,16 +685,16 @@ function getTypeLabel(type) {
 
 /* Notification Item */
 .notification-item {
-  background-color: var(--color-bg-card);
+  background-color: var(--color-bg-panel);
   border-radius: 16px;
   padding: var(--spacing-lg);
   margin-bottom: var(--spacing-sm);
   transition: all var(--transition-normal);
-  border: 1px solid transparent;
+  border: 1px solid var(--color-border-light);
 }
 
 .notification-item:hover {
-  background-color: var(--color-bg-panel);
+  background-color: var(--color-bg-tertiary);
   border-color: var(--color-border-light);
   box-shadow: var(--shadow-md);
   transform: translateY(-2px);
@@ -934,6 +929,35 @@ function getTypeLabel(type) {
   margin-left: -8px;
 }
 
+/* 加载状态 */
+.notifications-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-3xl);
+  text-align: center;
+  width: 100%;
+  min-height: 200px;
+  color: var(--color-text-muted);
+}
+
+.notifications-loading__spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--color-border-light);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: var(--spacing-md);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 /* 空状态 */
 .notifications-empty {
   display: flex;
@@ -1111,30 +1135,73 @@ function getTypeLabel(type) {
 .leaderboard-item__info {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+}
+
+.leaderboard-item__main {
+  display: flex;
+  align-items: center;
 }
 
 .leaderboard-item__name {
   font-size: 14px;
   font-weight: 600;
   color: var(--color-text-main);
-  margin: 0 0 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   transition: color var(--transition-fast);
+  line-height: 1.2;
+  flex: 1;
+  min-width: 0;
 }
 
 .leaderboard-item:hover .leaderboard-item__name {
   color: var(--color-primary);
 }
 
+.leaderboard-item__badge {
+  /* 紧凑样式：与名字高度一致 */
+  padding: 1px 8px;
+  font-size: 11px;
+  line-height: 1.2;
+  flex-shrink: 0;
+  margin-left: auto;  /* 标签靠右 */
+}
+
 .leaderboard-item__hours {
   font-size: 12px;
   color: var(--color-text-muted);
-  margin: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* DirectionBadge component handles its own styling */
+
+/* 处刑榜空状态 */
+.leaderboard-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-xl);
+  text-align: center;
+  color: var(--color-text-muted);
+}
+
+.leaderboard-empty .material-symbols-outlined {
+  font-size: 36px;
+  opacity: 0.5;
+  margin-bottom: var(--spacing-sm);
+}
+
+.leaderboard-empty p {
+  font-size: 14px;
+  margin: 0;
 }
 
 /* Responsive */
