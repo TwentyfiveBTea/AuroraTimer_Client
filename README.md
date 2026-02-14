@@ -1,6 +1,6 @@
 # Aurora Timer ⏱️
 
-> Aurora Studio Community - 工时管理与协作平台
+> AuroraTimer - 计时打卡管理平台
 
 [![Vue](https://img.shields.io/badge/Vue-3.4+-42b883?style=flat&logo=vue.js)](https://vuejs.org)
 [![Electron](https://img.shields.io/badge/Electron-28.3-47848f?style=flat&logo=electron)](https://www.electronjs.org)
@@ -17,15 +17,13 @@ Aurora Timer 是一款面向工作室/团队的工时打卡管理桌面应用，
 |------|------|
 | 框架 | Vue 3 + Composition API |
 | 状态管理 | Pinia |
-| 路由 | Vue Router |
+| 路由 | Vue Router |ß
 | HTTP | Axios |
 | 桌面打包 | Electron |
 | 构建工具 | Vite |
 | 样式 | SCSS |
 
-## 📥 下载安装包
-
-前往 [Releases](https://github.com/TwentyfiveBTea/AuroraTimer_Client/releases) 页面下载对应版本：
+## 📥 下载与选择安装包
 
 ### Windows 用户
 
