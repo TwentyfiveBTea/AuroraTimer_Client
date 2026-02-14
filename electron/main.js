@@ -43,9 +43,7 @@ function createWindow() {
     mainWindow.webContents.openDevTools()
   } else {
     // 生产环境加载打包后的文件
-    const appPath = getAppPath()
-    // 打包后路径: app.asar/dist/index.html
-    mainWindow.loadFile(join(appPath, 'app.asar', 'dist', 'index.html'))
+    mainWindow.loadFile(join(appPath, 'dist', 'index.html'))
   }
 
   // 窗口准备好后显示
