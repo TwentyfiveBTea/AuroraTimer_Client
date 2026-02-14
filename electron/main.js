@@ -8,7 +8,7 @@ let mainWindow = null
 
 // 获取应用根目录
 function getAppPath() {
-  return app.isPackaged ? process.resourcesPath : __dirname
+  return app.isPackaged ? app.getAppPath() : __dirname
 }
 
 const isDev = !app.isPackaged
@@ -31,7 +31,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: isDev ? join(__dirname, 'preload.js') : join(getAppPath(), 'app.asar', 'electron', 'preload.js')
+      preload: isDev ? join(__dirname, 'preload.js') : join(getAppPath(), 'electron', 'preload.js')
     },
     show: false,
     autoHideMenuBar: false
@@ -43,7 +43,7 @@ function createWindow() {
     mainWindow.webContents.openDevTools()
   } else {
     // 生产环境加载打包后的文件
-    mainWindow.loadFile(join(appPath, 'dist', 'index.html'))
+    mainWindow.loadFile(join(getAppPath(), 'dist', 'index.html'))
   }
 
   // 窗口准备好后显示
