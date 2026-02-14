@@ -1,7 +1,7 @@
 {
   "name": "AuroraTimer",
   "version": "1.0.0",
-  "description": "Aurora Studio Community - 工时管理与协作平台",
+  "description": "AuroraTimer - 计时打卡管理平台",
   "main": "electron/main.js",
   "type": "module",
   "scripts": {
@@ -24,13 +24,16 @@
     "concurrently": "^8.2.2",
     "electron": "^28.3.3",
     "electron-builder": "^24.9.1",
+    "png-to-icns": "^1.0.0",
+    "png-to-ico": "^3.0.1",
     "sass": "^1.69.5",
+    "sharp": "^0.34.5",
     "vite": "^5.0.10",
     "wait-on": "^7.2.0"
   },
   "build": {
     "appId": "com.aurorastudio.timer",
-    "productName": "Aurora Timer",
+    "productName": "AuroraTimer",
     "directories": {
       "output": "dist-electron"
     },
@@ -42,15 +45,20 @@
     "asar": true,
     "mac": {
       "category": "public.app-category.productivity",
+      "icon": "build/icon.png",
       "target": [
         {
           "target": "dmg",
-          "arch": ["x64", "arm64"]
+          "arch": [
+            "x64",
+            "arm64"
+          ]
         }
       ]
     },
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "icon": "build/icon.png"
     },
     "linux": {
       "target": "AppImage"
