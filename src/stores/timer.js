@@ -40,7 +40,7 @@ export const useTimerStore = defineStore('timer', () => {
   
   // ============ 同步相关配置 ============
   const SYNC_INTERVAL = 1 // 同步间隔（秒）- 每1秒同步到服务器
-  const AFK_CHECK_INTERVAL = 10 // 挂机检测间隔（秒）- 10秒（测试用）
+  const AFK_CHECK_INTERVAL = 1200 // 挂机检测间隔（秒）- 20分钟
   
   // ============ 挂机检测状态 ============
   const lastMousePoint = ref({ x: 0, y: 0 })
@@ -65,7 +65,6 @@ export const useTimerStore = defineStore('timer', () => {
       todayDuration: todayDuration.value
     }
     localStorage.setItem('timer_state', JSON.stringify(state))
-    console.log('[Timer] 计时状态已保存:', state)
   }
   
   // ============ 计算属性 ============
@@ -128,7 +127,6 @@ export const useTimerStore = defineStore('timer', () => {
     
     // 设置恢复模式标志，跳过首次同步
     justRestored.value = true
-    console.log('[Timer] startTimer 设置恢复模式，跳过首次同步')
     
     try {
       // 调用后端接口开始计时
@@ -159,7 +157,6 @@ export const useTimerStore = defineStore('timer', () => {
     })
     
     workerRunning = true
-    console.log('[Timer] 计时已开始')
     } catch (error) {
       console.error('[Timer] 开始计时失败:', error)
     }
@@ -178,9 +175,7 @@ export const useTimerStore = defineStore('timer', () => {
     }
     
     if (type === 'tick') {
-      console.log('[Timer] Worker 收到 tick, elapsed:', elapsed)
       currentTime.value = elapsed
-      console.log('[Timer] currentTime 已更新为:', currentTime.value)
       
       // ============ 1秒同步策略 ============
       // 每 1 秒同步一次数据到服务器
@@ -192,22 +187,18 @@ export const useTimerStore = defineStore('timer', () => {
       // 恢复后第一次同步完成后，重置标志
       if (justRestored.value && elapsed > 0) {
         justRestored.value = false
-        console.log('[Timer] 恢复模式结束，正常同步')
       }
   
-      // ============ 挂机检测（每 10 秒 / 测试用） ============
+      // ============ 挂机检测（每 20 分钟） ============
       if (elapsed % AFK_CHECK_INTERVAL === 0 && elapsed > 0) {
         checkAFK()
       }
     } else if (type === 'stop') {
       workerRunning = false
-      console.log('[Timer] Worker 已停止')
     } else if (type === 'pause') {
       workerRunning = false
-      console.log('[Timer] Worker 已暂停')
     } else if (type === 'resume') {
       workerRunning = true
-      console.log('[Timer] Worker 已恢复')
     }
   }
   
@@ -276,7 +267,6 @@ export const useTimerStore = defineStore('timer', () => {
     
     // 清除本地计时状态
     localStorage.removeItem('timer_state')
-    console.log('[Timer] 本地计时状态已清除')
     
     const worker = getTimerWorker()
     worker.postMessage({ command: 'stop' })
@@ -284,8 +274,6 @@ export const useTimerStore = defineStore('timer', () => {
     
       // 保存记录并同步最终数据
       await syncToServer()
-      
-      console.log('[Timer] 计时已停止')
     } catch (error) {
       console.error('[Timer] 停止计时失败:', error)
     }
@@ -310,8 +298,6 @@ export const useTimerStore = defineStore('timer', () => {
       const userId = authStore.user?.userId
       if (!userId) return
       
-      console.log(`[Timer] 同步到服务器，SYNC_INTERVAL=${SYNC_INTERVAL}`)
-      
       // 调用 API 同步时间
       const response = await timerAPI.addTime({
         userId,
@@ -325,10 +311,6 @@ export const useTimerStore = defineStore('timer', () => {
       if (isSuccessCode) {
         // 更新本地状态以服务器为准
         if (response.data) {
-          console.log(`[Timer] 已同步 ${SYNC_INTERVAL} 秒到服务器`)
-          console.log(`[Timer] 本次实际增加: ${response.data.addedSeconds} 秒`)
-          console.log(`[Timer] 服务器计算的本周总时长: ${response.data.serverWeekTime} 秒`)
-
           // ✅ 关键：同步成功后更新 serverStatus，这样首页计时器会实时更新
           if (response.data.serverWeekTime) {
             serverStatus.value.weekTotalSeconds = response.data.serverWeekTime
@@ -355,9 +337,7 @@ export const useTimerStore = defineStore('timer', () => {
         return
       }
       
-      console.log('[Timer] 正在获取计时状态, userId:', userId)
       const response = await timerAPI.getTimerStatus(userId)
-      console.log('[Timer] 计时状态响应:', response)
       
       // 后端返回: { code, message, data: { isTiming, status, weekTotalSeconds, totalSeconds, remainingSeconds } }
       const code = response?.code
@@ -366,17 +346,13 @@ export const useTimerStore = defineStore('timer', () => {
       if (isSuccessCode) {
         if (response.data) {
           serverStatus.value = response.data
-          console.log('[Timer] 计时状态已更新:', serverStatus.value)
           
           // 更新统计
           statistics.value.weekHours = Math.round(response.data.weekTotalSeconds / 3600 * 10) / 10
           statistics.value.totalHours = Math.round(response.data.totalSeconds / 3600 * 10) / 10
-          console.log('[Timer] 本周时长(秒):', response.data.weekTotalSeconds)
-          console.log('[Timer] 本周时长(小时):', statistics.value.weekHours)
           
           // 🔑 关键：将后端时间加到 currentTime 上
           if (response.data.weekTotalSeconds > 0) {
-            console.log('[Timer] 将后端时间加入当前计时, 旧 currentTime:', currentTime.value)
             // 计算后端时间与本地时间的差值（避免重复计时）
             const serverTime = response.data.weekTotalSeconds || 0
             const localTime = currentTime.value || 0
@@ -384,9 +360,6 @@ export const useTimerStore = defineStore('timer', () => {
             // 取较大值作为起始时间
             if (serverTime > localTime) {
               currentTime.value = serverTime
-              console.log('[Timer] 已更新 currentTime 为:', currentTime.value)
-            } else {
-              console.log('[Timer] 保持 currentTime 为:', currentTime.value)
             }
             
             // 保存更新后的状态
@@ -420,7 +393,6 @@ export const useTimerStore = defineStore('timer', () => {
       const isSuccessCode = code === 200 || code === '200' || code === '0000000' || code === true || code === 'success'
       
       if (isSuccessCode) {
-        console.log(`[Timer] 目标时长: ${response.data} 秒`)
         return response.data
       }
     } catch (error) {
@@ -454,10 +426,6 @@ export const useTimerStore = defineStore('timer', () => {
    */
   async function saveTimerRecord() {
     try {
-      console.log('计时记录已保存:', {
-        duration: currentTime.value,
-        todayTotal: todayDuration.value
-      })
     } catch (error) {
       console.error('保存计时记录失败:', error)
     }
@@ -481,7 +449,6 @@ export const useTimerStore = defineStore('timer', () => {
         
         // 如果心跳返回成功但 data 是 false，说明用户已离线
         if (isSuccessCode && response.data === false) {
-          console.log('[Timer] 心跳检测失败，用户可能已离线')
           return
         }
       } catch (error) {
@@ -647,13 +614,8 @@ export const useTimerStore = defineStore('timer', () => {
    * @param {boolean} forceRestore - 是否强制恢复（忽略后端状态）
    */
   function restoreTimerState(forceRestore = false) {
-    console.log('[Timer] restoreTimerState 被调用, forceRestore:', forceRestore)
-    console.log('[Timer] 当前状态 - isRunning:', isRunning.value, 'isPaused:', isPaused.value, 'workerRunning:', workerRunning)
-    console.log('[Timer] 后端状态 - isTiming:', serverStatus.value.isTiming, 'status:', serverStatus.value.status)
-    
     // 如果 Worker 已经在运行，跳过恢复
     if (workerRunning) {
-      console.log('[Timer] Worker 已经在运行，跳过恢复')
       return
     }
     
@@ -661,13 +623,8 @@ export const useTimerStore = defineStore('timer', () => {
     const shouldRun = forceRestore || (isRunning.value && !isPaused.value)
     
     if (shouldRun) {
-      console.log('[Timer] 恢复计时器状态:')
-      console.log('  - currentTime:', currentTime.value)
-      console.log('  - isRunning:', isRunning.value)
-      
       // 设置恢复模式标志，跳过首次同步
       justRestored.value = true
-      console.log('[Timer] 设置恢复模式，跳过首次同步')
       
       // 重新启动 Worker，传递当前时间
       const worker = getTimerWorker()
@@ -681,9 +638,7 @@ export const useTimerStore = defineStore('timer', () => {
       })
       
       workerRunning = true
-      console.log('[Timer] Worker 已重新启动')
     } else {
-      console.log('[Timer] 不满足恢复条件，不恢复计时器')
     }
   }
   
