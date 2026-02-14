@@ -142,18 +142,24 @@ AuroraTimer_Client/
 ---
 
 ## 🖼️页面图片
-- 登录![8691770994581_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8691770994581_.pic.jpg)
+- 登录<img width="1400" height="900" alt="WechatIMG869" src="https://github.com/user-attachments/assets/3eacc40a-ef5e-43ad-9ff5-005a0395cdc0" />
 
-- 注册![8711770994597_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8711770994597_.pic.jpg)
+- 注册<img width="1400" height="900" alt="WechatIMG871" src="https://github.com/user-attachments/assets/dd022f98-188d-4580-b293-ecf26f0e3de9" />
 
-- 忘记密码![8731770994614_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8731770994614_.pic.jpg)
+- 忘记密码<img width="1400" height="900" alt="WechatIMG873" src="https://github.com/user-attachments/assets/36497f9e-1a84-49c5-9db8-3eec2dc130d0" />
 
-- 首页![8751770994670_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8751770994670_.pic.jpg)
-- 排行榜![8771770994921_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8771770994921_.pic.jpg)
-- 通知![8791770994937_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8791770994937_.pic.jpg)
-- 个人中心![8811770994965_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8811770994965_.pic.jpg)
-- 设置![8831770994988_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8831770994988_.pic.jpg)
-- 管理员页面![image-20260214151442592](/Users/apple/Library/Application Support/typora-user-images/image-20260214151442592.png)
+- 首页<img width="1400" height="900" alt="WechatIMG875" src="https://github.com/user-attachments/assets/fde03d40-442a-40be-954b-a3a9080b8fb0" />
+
+- 排行榜<img width="1400" height="900" alt="WechatIMG877" src="https://github.com/user-attachments/assets/9e47e5fc-386e-4630-83e9-d28e688aaded" />
+
+- 通知<img width="1400" height="900" alt="WechatIMG879" src="https://github.com/user-attachments/assets/bf5ed09b-44f1-4214-841e-0acb5137257f" />
+
+- 个人中心<img width="1400" height="900" alt="WechatIMG881" src="https://github.com/user-attachments/assets/cf414836-1360-4bf3-9158-3ae7bd82ec19" />
+
+- 设置<img width="1400" height="900" alt="WechatIMG883" src="https://github.com/user-attachments/assets/65f1a539-01bf-4b44-a2b7-754a715e7a1c" />
+
+- 管理员页面<img width="1400" height="900" alt="WechatIMG888" src="https://github.com/user-attachments/assets/acbf1d96-9ed1-4f41-ab80-6aed8aad1c8e" />
+
 
 ---
 
