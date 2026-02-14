@@ -139,7 +139,23 @@ AuroraTimer_Client/
 
 ## 🔌 API 对接
 
-本项目为纯前端，需要搭配后端服务使用。
+本项目为纯前端项目，需要搭配后端服务使用。
+
+---
+
+## 🖼️页面图片
+- 登录![8691770994581_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8691770994581_.pic.jpg)
+
+- 注册![8711770994597_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8711770994597_.pic.jpg)
+
+- 忘记密码![8731770994614_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8731770994614_.pic.jpg)
+
+- 首页![8751770994670_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8751770994670_.pic.jpg)
+- 排行榜![8771770994921_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8771770994921_.pic.jpg)
+- 通知![8791770994937_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8791770994937_.pic.jpg)
+- 个人中心![8811770994965_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8811770994965_.pic.jpg)
+- 设置![8831770994988_.pic](/Users/apple/Library/Containers/com.tencent.xinWeChat/Data/Library/Application Support/com.tencent.xinWeChat/2.0b4.0.9/dfdcadbc1d35f69dc446b5769a52030b/Message/MessageTemp/9e20f478899dc29eb19741386f9343c8/Image/8831770994988_.pic.jpg)
+- 管理员页面![image-20260214151442592](/Users/apple/Library/Application Support/typora-user-images/image-20260214151442592.png)
 
 ---
 
