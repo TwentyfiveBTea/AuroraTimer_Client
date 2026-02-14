@@ -36,8 +36,10 @@
     },
     "files": [
       "dist/**",
-      "electron/**"
+      "electron/**",
+      "package.json"
     ],
+    "asar": true,
     "mac": {
       "category": "public.app-category.productivity",
       "target": [

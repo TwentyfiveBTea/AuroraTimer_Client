@@ -13,7 +13,7 @@ export default defineConfig(({ mode }) => ({
     port: 5173,
     open: false
   },
-  base: mode === 'production' ? '/' : './',
+  base: './',
   build: {
     outDir: 'dist',
     assetsDir: 'assets'

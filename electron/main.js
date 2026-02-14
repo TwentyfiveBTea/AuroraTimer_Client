@@ -5,7 +5,13 @@ import { fileURLToPath } from 'node:url'
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 
 let mainWindow = null
-const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
+
+// 获取应用根目录
+function getAppPath() {
+  return app.isPackaged ? process.resourcesPath : __dirname
+}
+
+const isDev = !app.isPackaged
 
 // 创建主窗口
 function createWindow() {
@@ -25,7 +31,7 @@ function createWindow() {
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: join(__dirname, 'preload.js')
+      preload: isDev ? join(__dirname, 'preload.js') : join(getAppPath(), 'app.asar', 'electron', 'preload.js')
     },
     show: false,
     autoHideMenuBar: false
@@ -37,7 +43,9 @@ function createWindow() {
     mainWindow.webContents.openDevTools()
   } else {
     // 生产环境加载打包后的文件
-    mainWindow.loadFile(join(__dirname, '../dist/index.html'))
+    const appPath = getAppPath()
+    // 打包后路径: app.asar/dist/index.html
+    mainWindow.loadFile(join(appPath, 'app.asar', 'dist', 'index.html'))
   }
 
   // 窗口准备好后显示
