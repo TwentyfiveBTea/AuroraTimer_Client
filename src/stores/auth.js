@@ -139,10 +139,8 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (err) {
       console.error('退出登录请求失败:', err)
     } finally {
-      // 无论成功失败，都清除本地状态
-      token.value = null
-      user.value = null
-      removeStorage('auth_token')
+      // 无论成功失败，都清除所有本地状态
+      clearAllStorage()
     }
   }
   
