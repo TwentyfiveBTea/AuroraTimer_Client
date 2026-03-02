@@ -88,7 +88,7 @@ const todayDuration = ref(0) // 今日时长（秒）
   
   // 本周总时长（秒）
   const weekTotalSeconds = computed(() => {
-    return serverStatus.value?.weekTotalSeconds || 0
+    return serverStatus.value?.weekTotalSeconds ?? 0
   })
   
   // 剩余时间（秒）

@@ -560,6 +560,7 @@ watch(cropSize, () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
 }
 
 .avatar-cropper__file-input {

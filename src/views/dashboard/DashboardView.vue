@@ -274,10 +274,16 @@ const weekProgressPercentage = computed(() => {
   // 使用服务器返回的本周总时间，而不是本地 currentTime（本地时间会有累积误差）
   const targetHours = targetDuration.value || 18
   const targetSeconds = targetHours * 3600
-  // 优先使用服务器时间，其次使用本地时间
-  const totalSeconds = timerStore.serverStatus?.weekTotalSeconds || timerStore.currentTime
-  const percentage = (totalSeconds / targetSeconds) * 100
-  return Math.min(Math.floor(percentage), 100) // 最高100%，向下取整
+  // 优先使用服务器时间，使用 nullish coalescing 避免 0 被错误处理
+  const serverTime = timerStore.serverStatus?.weekTotalSeconds
+  const totalSeconds = serverTime !== undefined && serverTime !== null ? serverTime : timerStore.currentTime
+
+  // 调试日志
+  console.log('[Debug] weekTotalSeconds:', serverTime, 'targetHours:', targetHours, 'targetSeconds:', targetSeconds, 'raw%:', (totalSeconds / targetSeconds * 100).toFixed(2))
+
+  // 正常计算
+  const raw = (totalSeconds / targetSeconds) * 100
+  return Math.min(Math.floor(raw), 100) // 最高100%，向下取整
 })
 
 // 登录时长格式化
@@ -289,19 +295,23 @@ const formatLoginTime = computed(() => {
 
 // 大环进度（0-24小时）
 const bigRingProgress = computed(() => {
-  const weekTime = authStore.user?.currentWeekTime || 0
+  // 使用 nullish coalescing 避免 0 被错误处理
+  const serverTime = timerStore.serverStatus?.weekTotalSeconds
+  const weekTime = serverTime !== undefined && serverTime !== null ? serverTime : timerStore.currentTime
   return timerStore.getTimerProgress(weekTime).big
 })
 
 // 中环进度（24-48小时）
 const middleRingProgress = computed(() => {
-  const weekTime = authStore.user?.currentWeekTime || 0
+  const serverTime = timerStore.serverStatus?.weekTotalSeconds
+  const weekTime = serverTime !== undefined && serverTime !== null ? serverTime : timerStore.currentTime
   return timerStore.getTimerProgress(weekTime).middle
 })
 
 // 小环进度（48-72小时）
 const littleRingProgress = computed(() => {
-  const weekTime = authStore.user?.currentWeekTime || 0
+  const serverTime = timerStore.serverStatus?.weekTotalSeconds
+  const weekTime = serverTime !== undefined && serverTime !== null ? serverTime : timerStore.currentTime
   return timerStore.getTimerProgress(weekTime).little
 })
 

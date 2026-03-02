@@ -455,23 +455,23 @@ function validateConfirmPassword() {
 const isFormValid = computed(() => {
   // 邮箱验证：只有填写了才验证
   const emailValid = !form.email || !errors.email
-  
-  // 方向验证：优先使用表单值，如果没有则使用用户已有值
-  const effectiveDirection = form.direction || authStore.user?.direction
-  const directionValid = !!effectiveDirection
-  
+
+  // 方向验证：只有当用户修改了方向时才验证，未修改时使用已有值
+  const isDirectionModified = form.direction !== '' && form.direction !== (authStore.user?.direction || '')
+  const directionValid = !isDirectionModified || !!form.direction
+
   // 密码验证：只有填写了新密码才验证
   let passwordValid = true
   let confirmValid = true
-  
+
   if (form.newPassword) {
-    passwordValid = form.newPassword.length >= 8 && 
-     /[a-zA-Z]/.test(form.newPassword) && 
+    passwordValid = form.newPassword.length >= 8 &&
+     /[a-zA-Z]/.test(form.newPassword) &&
      /[0-9]/.test(form.newPassword)
     confirmValid = form.newPassword === form.confirmPassword
   }
-  
-  // 必须有有效的邮箱和方向，且密码验证通过
+
+  // 必须有有效的邮箱和方向（如果修改了的话），且密码验证通过
   return emailValid && directionValid && passwordValid && confirmValid
 })
 
