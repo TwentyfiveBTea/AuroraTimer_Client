@@ -81,8 +81,14 @@ request.interceptors.response.use(
       
       switch (status) {
         case 401:
-          // 未授权，清除 token 并跳转到登录页
+          // 未授权，清除所有本地数据并跳转到登录页
+          console.warn('[API] 收到 401 错误，清除所有本地数据')
           localStorage.removeItem('auth_token')
+          localStorage.removeItem('auth_userId')
+          localStorage.removeItem('auth_userInfo')
+          localStorage.removeItem('timer_state')
+          localStorage.removeItem('admin_token')
+          localStorage.removeItem('admin_user')
           window.location.href = '/login'
           break
         case 403:

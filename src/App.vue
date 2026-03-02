@@ -27,6 +27,18 @@ onMounted(async () => {
   // 初始化字体
   themeStore.initFont()
 
+  // 验证用户是否有效（如果用户在服务器上已被删除，会清除本地数据并跳转登录）
+  if (authStore.token) {
+    console.log('[App] 检测到 token，验证用户有效性...')
+    await authStore.fetchUser()
+    // 如果 fetchUser 验证失败（用户被删除），会清除数据并跳转到登录页
+    // 如果验证成功，isAuthenticated 仍然为 true，继续执行
+    if (!authStore.token) {
+      console.log('[App] 用户验证失败，已清除本地数据')
+      return // 停止后续初始化
+    }
+  }
+
   // 检查本地是否有未结束的计时状态
   const savedTimerState = JSON.parse(localStorage.getItem('timer_state') || '{}')
   const localIsRunning = savedTimerState.isRunning === true

@@ -146,6 +146,19 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
   
+  // ============ 清除所有本地存储数据 ============
+  function clearAllStorage() {
+    token.value = null
+    user.value = null
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_userId')
+    localStorage.removeItem('auth_userInfo')
+    localStorage.removeItem('admin_token')
+    localStorage.removeItem('admin_user')
+    localStorage.removeItem('timer_state')
+    console.log('[Auth] 已清除所有本地存储数据')
+  }
+
   // ============ 获取用户信息 ============
   async function fetchUser() {
     if (!token.value) return
@@ -187,14 +200,31 @@ export const useAuthStore = defineStore('auth', () => {
       }
     } catch (err) {
       error.value = err.message
-      console.warn('获取用户信息失败，尝试从本地存储恢复:', err.message)
+      console.warn('获取用户信息失败:', err.message)
       
-      // 尝试从本地存储恢复用户信息
+      // 检查错误类型，如果是以下情况则清除本地数据：
+      // 1. 401 未授权（token 无效或被删除）
+      // 2. 404 用户不存在
+      // 3. 403 无权限
+      const status = err.response?.status
+      const errorCode = err.response?.data?.code
+      
+      if (status === 401 || status === 404 || status === 403 || 
+          errorCode === 401 || errorCode === 404 || errorCode === 'USER_NOT_FOUND' ||
+          err.message?.includes('用户不存在') || err.message?.includes('无效')) {
+        console.warn('[Auth] 检测到用户已被删除或token无效，清除所有本地数据')
+        clearAllStorage()
+        // 跳转到登录页面
+        window.location.href = '/login'
+        return
+      }
+      
+      // 尝试从本地存储恢复用户信息（仅用于网络错误时的临时显示）
       const savedUserInfo = localStorage.getItem('auth_userInfo')
       if (savedUserInfo) {
         try {
           user.value = JSON.parse(savedUserInfo)
-          console.log('[Auth] 已从本地存储恢复用户信息')
+          console.log('[Auth] 网络错误，已从本地存储临时恢复用户信息')
         } catch (e) {
           console.error('[Auth] 解析本地用户信息失败:', e)
         }
@@ -360,6 +390,7 @@ export const useAuthStore = defineStore('auth', () => {
     updateProfile,
     uploadAvatar,
     forgotPassword,
-    initFromStorage
+    initFromStorage,
+    clearAllStorage
   }
 })
