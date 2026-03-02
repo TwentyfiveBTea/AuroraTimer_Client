@@ -53,7 +53,7 @@
               <div class="input-row">
                 <label class="input-row__label" for="api-url">同步服务器</label>
                             <input id="api-url" type="text" v-model="systemSettings.apiUrl" class="input-row__field"
-                                placeholder="api.aurora.com" />
+                                placeholder="aurrlab.top" />
               </div>
             </div>
           </div>
@@ -370,7 +370,7 @@ const activeSetting = ref('theme')
 
 const systemSettings = reactive({
   autoStart: false,
-  apiUrl: 'api.aurora.com'
+  apiUrl: 'aurrlab.top'
 })
 
 // 初始化开机自启状态
