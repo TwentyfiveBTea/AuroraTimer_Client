@@ -1,9 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { setStorage, getStorage, removeStorage } from '@/utils'
 import { authAPI, userAPI } from '@/api'
 
 export const useAuthStore = defineStore('auth', () => {
+  // ============ Router ============
+  const router = useRouter()
   // ============ 状态 ============
   const user = ref(null)
   const token = ref(getStorage('auth_token', null))
@@ -141,8 +144,8 @@ export const useAuthStore = defineStore('auth', () => {
     } finally {
       // 无论成功失败，都清除本地状态
       clearAllStorage()
-      // 强制刷新页面，确保所有状态重置
-      window.location.href = '/login'
+      // 使用 Vue Router 导航到登录页
+      router.push('/login')
     }
   }
   
