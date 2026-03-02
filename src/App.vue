@@ -39,42 +39,35 @@ onMounted(async () => {
     }
   }
 
-  // 检查本地是否有未结束的计时状态
-  const savedTimerState = JSON.parse(localStorage.getItem('timer_state') || '{}')
-  const localIsRunning = savedTimerState.isRunning === true
-  const localIsPaused = savedTimerState.isPaused === true
-
   // 全局计时器初始化 - 只在用户已登录时执行
+  // 完全从服务器获取状态，不再依赖本地缓存
   if (authStore.isAuthenticated && authStore.user?.userId) {
-    console.log('[App] 用户已登录，初始化全局计时器...')
+    console.log('[App] 用户已登录，从服务器获取计时状态...')
     await timerStore.fetchTimerStatus()
 
-    // 只有在本地状态显示正在计时时，才从后端恢复计时器
-    // 这样可以避免：用户主动停止计时后，刷新页面计时器又自动开始
-    if (localIsRunning && !localIsPaused) {
-      console.log('[App] 本地显示正在计时，检查后端状态...')
-      // 如果后端也显示正在计时，恢复计时器
-      if (timerStore.serverStatus.isTiming || timerStore.serverStatus.status === 'RUNNING') {
-        console.log('[App] 后端显示正在计时，恢复计时器...')
-        timerStore.restoreTimerState(true)
-      }
+    // 只有在服务器状态显示正在计时时，才恢复计时器
+    // 这样确保：数据库删除用户后，即使本地有缓存，也不会恢复错误的计时状态
+    if (timerStore.serverStatus.isTiming || timerStore.serverStatus.status === 'RUNNING') {
+      console.log('[App] 服务器显示正在计时，恢复计时器...')
+      timerStore.restoreTimerState(true)
     } else {
-      console.log('[App] 本地状态未在计时，不自动恢复')
+      console.log('[App] 服务器未在计时，不自动恢复')
+      // 清除可能的本地计时状态
+      timerStore.resetTimerState()
     }
   }
 
   // 监听用户登录状态变化
   authStore.$subscribe(async (mutation, state) => {
     if (state.isAuthenticated && state.user?.userId) {
-      console.log('[App] 用户登录成功，初始化计时器...')
+      console.log('[App] 用户登录成功，从服务器获取计时状态...')
       await timerStore.fetchTimerStatus()
 
-      // 检查本地状态
-      const savedState = JSON.parse(localStorage.getItem('timer_state') || '{}')
-      if (savedState.isRunning && !savedState.isPaused) {
-        if (timerStore.serverStatus.isTiming || timerStore.serverStatus.status === 'RUNNING') {
-          timerStore.restoreTimerState(true)
-        }
+      // 只有服务器显示正在计时才恢复
+      if (timerStore.serverStatus.isTiming || timerStore.serverStatus.status === 'RUNNING') {
+        timerStore.restoreTimerState(true)
+      } else {
+        timerStore.resetTimerState()
       }
     }
   })

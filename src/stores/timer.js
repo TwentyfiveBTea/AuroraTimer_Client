@@ -24,15 +24,13 @@ function getTimerWorker() {
 export const useTimerStore = defineStore('timer', () => {
   const authStore = useAuthStore()
   
-  // ============ 从 localStorage 恢复计时状态 ============
-  const savedTimerState = JSON.parse(localStorage.getItem('timer_state') || '{}')
-  
-  // ============ 基础计时状态 ============
-  const isRunning = ref(savedTimerState.isRunning || false)
-  const isPaused = ref(savedTimerState.isPaused || false)
-  const isAFK = ref(savedTimerState.isAFK || false) // 是否处于挂机状态
-  const currentTime = ref(savedTimerState.currentTime || 0) // 本次会话已计时秒数
-  const todayDuration = ref(savedTimerState.todayDuration || 0) // 今日时长（秒）
+// ============ 计时器状态初始化（不再依赖本地缓存） ============
+// 初始状态设为默认值，不从 localStorage 恢复
+const isRunning = ref(false)
+const isPaused = ref(false)
+const isAFK = ref(false) // 是否处于挂机状态
+const currentTime = ref(0) // 本次会话已计时秒数
+const todayDuration = ref(0) // 今日时长（秒）
   const timerInterval = ref(null)
   
   // 恢复模式标志：刚恢复计时器时跳过首次同步
@@ -287,6 +285,34 @@ export const useTimerStore = defineStore('timer', () => {
     currentTime.value = 0
   }
   
+  // ============ 清除计时器本地状态 ============
+  function resetTimerState() {
+    // 停止计时器
+    if (workerRunning) {
+      const worker = getTimerWorker()
+      worker.postMessage({ command: 'stop' })
+      workerRunning = false
+    }
+    
+    // 重置所有状态
+    isRunning.value = false
+    isPaused.value = false
+    isAFK.value = false
+    currentTime.value = 0
+    todayDuration.value = 0
+    serverStatus.value = {
+      isTiming: false,
+      status: '',
+      weekTotalSeconds: 0,
+      totalSeconds: 0,
+      remainingSeconds: 0
+    }
+    
+    // 清除本地存储
+    localStorage.removeItem('timer_state')
+    console.log('[Timer] 已清除所有计时器本地状态')
+  }
+  
   // ============ 同步相关方法 ============
   
   /**
@@ -371,6 +397,22 @@ export const useTimerStore = defineStore('timer', () => {
       }
     } catch (error) {
       console.error('[Timer] 获取计时状态失败:', error)
+      
+      // 检查错误类型，如果是以下情况则清除本地数据：
+      // 1. 401 未授权（token 无效或被删除）
+      // 2. 404 用户不存在
+      // 3. 403 无权限
+      const status = error.response?.status
+      const errorCode = error.response?.data?.code
+      
+      if (status === 401 || status === 404 || status === 403 || 
+          errorCode === 401 || errorCode === 404 || errorCode === 'USER_NOT_FOUND' ||
+          error.message?.includes('用户不存在') || error.message?.includes('无效')) {
+        console.warn('[Timer] 检测到用户已被删除或token无效，清除所有本地计时数据')
+        // 清除计时器本地状态
+        resetTimerState()
+        return
+      }
     }
   }
   
@@ -668,6 +710,7 @@ export const useTimerStore = defineStore('timer', () => {
     resumeTimer,
     stopTimer,
     resetTimer,
+    resetTimerState,
     
     // 同步方法
     syncToServer,

@@ -64,10 +64,6 @@
               <span class="material-symbols-outlined data-management__icon">admin_panel_settings</span>
               管理员入口
             </button>
-            <button class="data-management__btn" @click="handleClearCache">
-              <span class="material-symbols-outlined data-management__icon">delete_sweep</span>
-              清除缓存
-            </button>
             <button class="data-management__btn" @click="handleLogout">
               <span class="material-symbols-outlined data-management__icon">logout</span>
               退出登录

@@ -139,8 +139,10 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (err) {
       console.error('退出登录请求失败:', err)
     } finally {
-      // 无论成功失败，都清除所有本地状态
+      // 无论成功失败，都清除本地状态
       clearAllStorage()
+      // 强制刷新页面，确保所有状态重置
+      window.location.href = '/login'
     }
   }
   
@@ -159,7 +161,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   // ============ 获取用户信息 ============
   async function fetchUser() {
-    if (!token.value) return
+    if (!token.value) {
+      clearAllStorage()
+      return
+    }
     
     isLoading.value = true
     try {
@@ -167,16 +172,9 @@ export const useAuthStore = defineStore('auth', () => {
       // 需要提供 userId
       const userId = user.value?.userId || localStorage.getItem('auth_userId')
       if (!userId) {
-        console.warn('无法获取用户ID')
-        // 尝试从本地存储恢复
-        const savedUserInfo = localStorage.getItem('auth_userInfo')
-        if (savedUserInfo) {
-          try {
-            user.value = JSON.parse(savedUserInfo)
-          } catch (e) {
-            console.error('[Auth] 解析本地用户信息失败:', e)
-          }
-        }
+        console.warn('[Auth] 无法获取用户ID，清除所有本地数据')
+        clearAllStorage()
+        window.location.href = '/login'
         return
       }
       
@@ -333,8 +331,8 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
   
-  // ============ 初始化从本地存储恢复数据 ============
-  function initFromStorage() {
+  // ============ 初始化从本地存储恢复数据并验证 token ============
+  async function initFromStorage() {
     // 尝试从 localStorage 恢复用户信息（直接使用 localStorage，避免 JSON 解析问题）
     const savedUserInfo = localStorage.getItem('auth_userInfo')
     const savedUserId = localStorage.getItem('auth_userId')
@@ -348,13 +346,21 @@ export const useAuthStore = defineStore('auth', () => {
     if (savedToken) {
       token.value = savedToken
       console.log('[Auth] token 已恢复到响应式变量')
+      
+      // 立即验证 token 是否有效（从服务器获取用户信息）
+      // 如果服务器删除用户或 token 失效，会在 fetchUser 中自动清除本地数据
+      console.log('[Auth] 验证 token 有效性...')
+      await fetchUser()
+    } else {
+      // 没有 token，清除所有本地存储数据
+      console.log('[Auth] 无 token，清除所有本地数据')
+      clearAllStorage()
     }
     
-    if (savedUserInfo) {
+    if (savedUserInfo && !user.value) {
       try {
         user.value = JSON.parse(savedUserInfo)
         console.log('[Auth] 已从本地存储恢复用户信息:', user.value)
-        console.log('[Auth] isAuthenticated 恢复后:', isAuthenticated.value)
       } catch (e) {
         console.error('[Auth] 解析本地用户信息失败:', e)
       }
