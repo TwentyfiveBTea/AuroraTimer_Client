@@ -456,8 +456,9 @@ const isFormValid = computed(() => {
   // 邮箱验证：只有填写了才验证
   const emailValid = !form.email || !errors.email
   
-  // 方向验证：只要有值就行
-  const directionValid = !!form.direction
+  // 方向验证：优先使用表单值，如果没有则使用用户已有值
+  const effectiveDirection = form.direction || authStore.user?.direction
+  const directionValid = !!effectiveDirection
   
   // 密码验证：只有填写了新密码才验证
   let passwordValid = true
@@ -470,7 +471,7 @@ const isFormValid = computed(() => {
     confirmValid = form.newPassword === form.confirmPassword
   }
   
-  // 必须填写邮箱和方向，且密码验证通过
+  // 必须有有效的邮箱和方向，且密码验证通过
   return emailValid && directionValid && passwordValid && confirmValid
 })
 
