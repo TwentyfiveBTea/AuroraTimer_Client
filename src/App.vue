@@ -51,9 +51,11 @@ onMounted(async () => {
       console.log('[App] 服务器显示正在计时，恢复计时器...')
       timerStore.restoreTimerState(true)
     } else {
-      console.log('[App] 服务器未在计时，不自动恢复')
-      // 清除可能的本地计时状态
-      timerStore.resetTimerState()
+      console.log('[App] 服务器未在计时，停止本地计时器')
+      // 只在本地计时器正在运行时才重置，避免清除 serverStatus
+      if (timerStore.isRunning) {
+        timerStore.resetTimerState()
+      }
     }
   }
 
