@@ -416,8 +416,9 @@ onMounted(async () => {
         console.log('[Dashboard] 服务器显示正在计时，恢复计时器...')
         timerStore.restoreTimerState(true)
       } else if (hasValidTimeData) {
-        // 服务器有计时数据但未在计时，显示数据但不自动启动
-        console.log('[Dashboard] 服务器有计时数据，显示但不自动启动')
+        // 服务器有计时数据，自动启动计时器继续计时
+        console.log('[Dashboard] 服务器有计时数据，自动启动计时器...')
+        timerStore.startTimer()
       } else {
         // 服务器没有计时数据，启动新计时
         console.log('[Dashboard] 启动新计时器...')
