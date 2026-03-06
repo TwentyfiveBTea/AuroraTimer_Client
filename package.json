@@ -48,7 +48,7 @@
       "icon": "build/icon.png",
       "target": [
         {
-          "target": "zip",
+          "target": "dmg",
           "arch": [
             "x64",
             "arm64"
@@ -57,11 +57,25 @@
       ]
     },
     "win": {
-      "target": "nsis",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
       "icon": "build/icon.png"
     },
     "linux": {
-      "target": "AppImage"
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
     },
     "publish": null
   }
