@@ -72,7 +72,7 @@
         </div>
         
         <div class="settings-panel__footer">
-          <span class="settings-panel__version">V1.0.0</span>
+          <span class="settings-panel__version">V1.0.1</span>
           <span class="settings-panel__edition">AuroraTimer</span>
         </div>
       </aside>

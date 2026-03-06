@@ -281,9 +281,9 @@ const weekProgressPercentage = computed(() => {
   // 调试日志
   console.log('[Debug] weekTotalSeconds:', serverTime, 'targetHours:', targetHours, 'targetSeconds:', targetSeconds, 'raw%:', (totalSeconds / targetSeconds * 100).toFixed(2))
 
-  // 正常计算
+  // 正常计算，允许超过100%
   const raw = (totalSeconds / targetSeconds) * 100
-  return Math.min(Math.floor(raw), 100) // 最高100%，向下取整
+  return Math.floor(raw) // 向下取整
 })
 
 // 登录时长格式化
