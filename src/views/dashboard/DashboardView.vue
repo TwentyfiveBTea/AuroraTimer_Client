@@ -233,7 +233,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useTimerStore } from '@/stores/timer'
 import { useAuthStore } from '@/stores/auth'
 
@@ -371,83 +371,36 @@ async function fetchDashboardData() {
 // ============ 生命周期 ============
 
 onMounted(async () => {
-  console.log('[Dashboard] onMounted 开始')
-  console.log('[Dashboard] authStore.token:', authStore.token ? '存在' : '不存在')
-  console.log('[Dashboard] authStore.user:', authStore.user ? '存在' : '不存在')
-  console.log('[Dashboard] authStore.isAuthenticated:', authStore.isAuthenticated)
-  console.log('[Dashboard] timerStore.isRunning:', timerStore.isRunning)
-  console.log('[Dashboard] timerStore.currentTime:', timerStore.currentTime)
-  
-  // 启动实时时间更新（每秒更新）
+  // 启动实时时间更新
   updateDateTime()
   timeInterval = setInterval(updateDateTime, 1000)
-  
-  // 检查并恢复登录状态
-  if (authStore.token && !authStore.user) {
-    console.log('[Dashboard] 检测到有 token 但无用户信息，尝试恢复...')
-    await authStore.fetchUser()
-  }
-  
-  // 如果用户已登录，先获取后端计时状态
-  if (authStore.isAuthenticated) {
-    console.log('[Dashboard] 从服务器获取计时状态...')
-    await timerStore.fetchTimerStatus()
-    console.log('[Dashboard] 服务器计时状态:', timerStore.serverStatus)
-    
-    // 检查服务器状态是否有效
-    const hasBackendStatus = timerStore.serverStatus && 
-                             (timerStore.serverStatus.isTiming !== undefined || 
-                              timerStore.serverStatus.status !== undefined)
-    
-    if (hasBackendStatus) {
-      console.log('[Dashboard] 服务器 isTiming:', timerStore.serverStatus.isTiming)
-      console.log('[Dashboard] 服务器 status:', timerStore.serverStatus.status)
-      console.log('[Dashboard] 服务器 weekTotalSeconds:', timerStore.serverStatus.weekTotalSeconds)
-      
-      // 如果服务器显示正在计时（兼容 isTiming=true 或 status='RUNNING'），恢复计时器状态
-      const isServerRunning = timerStore.serverStatus.isTiming === true || 
-                               timerStore.serverStatus.status === 'RUNNING'
-      
-      // 检查服务器是否有有效的计时数据
-      const hasValidTimeData = timerStore.serverStatus.weekTotalSeconds > 0
-      
-      // 完全依赖服务器状态，不再使用 localStorage
-      if (isServerRunning) {
-        console.log('[Dashboard] 服务器显示正在计时，恢复计时器...')
-        timerStore.restoreTimerState(true)
-      } else if (hasValidTimeData) {
-        // 服务器有计时数据，自动启动计时器继续计时
-        console.log('[Dashboard] 服务器有计时数据，自动启动计时器...')
-        timerStore.startTimer()
-      } else {
-        // 服务器没有计时数据，启动新计时
-        console.log('[Dashboard] 启动新计时器...')
-        timerStore.startTimer()
-      }
-    } else {
-      // 无法获取服务器状态，启动新计时
-      console.log('[Dashboard] 无法获取服务器状态，启动新计时器...')
-      timerStore.startTimer()
-    }
-  }
-  
-  // 获取仪表盘数据（包括在线人数）
-  await fetchDashboardData()
-  
-  // 如果计时器已在运行，初始化挂机检测
-  if (timerStore.isRunning && !timerStore.isPaused) {
-    timerStore.initAFKDetection()
-  }
-  
-  // 获取统计数据
-  await timerStore.fetchStatistics()
-  console.log('[Dashboard] onMounted 完成')
-  
+
   // 请求通知权限
   if ('Notification' in window && Notification.permission === 'default') {
     await Notification.requestPermission()
   }
+
+  // 如果已认证，拉取仪表盘动态数据
+  // （计时器的启动/恢复由 App.vue 统一管理，这里只负责数据展示）
+  if (authStore.isAuthenticated) {
+    await fetchDashboardData()
+    await timerStore.fetchStatistics()
+    if (timerStore.isRunning && !timerStore.isPaused) {
+      timerStore.initAFKDetection()
+    }
+  }
 })
+
+// 登录后补充拉取仪表盘数据（首次登录时 onMounted 时可能还未认证）
+watch(
+  () => authStore.isAuthenticated,
+  async (isAuth, wasAuth) => {
+    if (isAuth && !wasAuth) {
+      await fetchDashboardData()
+      await timerStore.fetchStatistics()
+    }
+  }
+)
 
 onUnmounted(() => {
   // 清理时间定时器

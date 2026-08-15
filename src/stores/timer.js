@@ -23,6 +23,11 @@ function getTimerWorker() {
 
 export const useTimerStore = defineStore('timer', () => {
   const authStore = useAuthStore()
+  // 获取 userId，优先使用 authStore，降级到 localStorage（防止初始化时 user 为 null 导致 API 静默失败）
+  function getUserId() {
+    return authStore.user?.userId || localStorage.getItem("auth_userId")
+  }
+
   
 // ============ 计时器状态初始化（不再依赖本地缓存） ============
 // 初始状态设为默认值，不从 localStorage 恢复
@@ -115,9 +120,14 @@ const todayDuration = ref(0) // 今日时长（秒）
    * 对接后端: POST /timer/start?userId=xxx
    */
   async function startTimer() {
+    // Handle stale running state (e.g., after logout/login without page refresh)
+    if (isRunning.value && !workerRunning) {
+      console.log("[Timer] Detected stale running state, resetting before restart...")
+      resetTimerState()
+    }
     if (isRunning.value) return
     
-    const userId = authStore.user?.userId
+    const userId = getUserId()
     if (!userId) {
       console.error('[Timer] 无法获取用户ID')
       return
@@ -225,7 +235,7 @@ const todayDuration = ref(0) // 今日时长（秒）
     if (!isRunning.value || !isPaused.value) return
     
     // 发送心跳检测
-    const userId = authStore.user?.userId
+    const userId = getUserId()
     if (userId) {
       try {
         await timerAPI.heartbeat(userId)
@@ -249,7 +259,7 @@ const todayDuration = ref(0) // 今日时长（秒）
   async function stopTimer() {
     if (!isRunning.value) return
     
-    const userId = authStore.user?.userId
+    const userId = getUserId()
     if (!userId) {
       console.error('[Timer] 无法获取用户ID')
       return
@@ -321,7 +331,7 @@ const todayDuration = ref(0) // 今日时长（秒）
    */
   async function syncToServer() {
     try {
-      const userId = authStore.user?.userId
+      const userId = getUserId()
       if (!userId) return
       
       // 调用 API 同步时间
@@ -357,7 +367,7 @@ const todayDuration = ref(0) // 今日时长（秒）
    */
   async function fetchTimerStatus() {
     try {
-      const userId = authStore.user?.userId
+      const userId = getUserId()
       if (!userId) {
         console.warn('[Timer] 无法获取用户ID，无法获取计时状态')
         return
@@ -422,7 +432,7 @@ const todayDuration = ref(0) // 今日时长（秒）
    */
   async function fetchTargetDuration() {
     try {
-      const userId = authStore.user?.userId
+      const userId = getUserId()
       if (!userId) {
         console.warn('[Timer] 无法获取用户ID，无法获取目标时长')
         return null
@@ -482,7 +492,7 @@ const todayDuration = ref(0) // 今日时长（秒）
     if (!window.electronAPI || isAFK.value) return
     
     // 发送心跳检测
-    const userId = authStore.user?.userId
+    const userId = getUserId()
     if (userId) {
       try {
         const response = await timerAPI.heartbeat(userId)
