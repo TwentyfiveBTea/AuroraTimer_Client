@@ -22,7 +22,7 @@ AuroraTimer currently allows the authentication store, app shell, dashboard, and
 - `AFK_PAUSED`: `isRunning=true`, `isPaused=true`, `isAFK=true`, Worker paused, synchronization stopped, recovery action available.
 - `STOPPED`: `isRunning=false`, Worker inactive, server session stopped.
 
-The server status is authoritative for automatic startup. A persisted-token launch restores only a server `RUNNING` session. A manual login starts a new session when the server is stopped, or restores the existing one when it is already running.
+The server status is checked first during automatic startup. A server `RUNNING` session is restored directly. If the server no longer reports it as running, a persisted-token launch may restart only a locally saved active session that belongs to the same user. Explicit logout removes that saved intent. A manual login starts a new session when the server is stopped, or restores the existing one when it is already running.
 
 ## Data Flow
 
@@ -35,7 +35,7 @@ The server status is authoritative for automatic startup. A persisted-token laun
 
 ## Error and Concurrency Rules
 
-- A failed status request must not revive a stale local Worker state.
+- A failed or stopped status response must not revive an unscoped local Worker state; restart intent is accepted only when it is active and belongs to the authenticated user.
 - Start, restore, resume, and stop operations must be idempotent and must not create multiple Workers or overlapping startup calls.
 - A failed notification permission request must not prevent the persistent in-app recovery control from appearing.
 - Profile data returned by a later full-profile request replaces abbreviated login data.

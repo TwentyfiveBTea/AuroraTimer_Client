@@ -81,6 +81,9 @@ export const useAuthStore = defineStore('auth', () => {
           localStorage.setItem('auth_userInfo', JSON.stringify(user.value))
           console.log('[Auth] 用户信息已保存:', user.value)
         }
+
+        // 登录接口只返回简略资料，进入应用前补齐完整用户信息。
+        await fetchUser()
         
         console.log('[Auth] isAuthenticated:', isAuthenticated.value)
         return { success: true }

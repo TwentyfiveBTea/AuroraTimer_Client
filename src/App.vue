@@ -33,6 +33,8 @@ async function syncTimerWithServer() {
   await timerStore.fetchTimerStatus()
   if (timerStore.serverStatus.isTiming || timerStore.serverStatus.status === 'RUNNING') {
     timerStore.restoreTimerState(true)
+  } else if (timerStore.shouldResumeAfterRestart()) {
+    await timerStore.startTimer()
   } else if (timerStore.isRunning) {
     timerStore.resetTimerState()
   }
@@ -55,15 +57,6 @@ watch(
   { immediate: true }
 )
 
-// 监听登录事件（false → true）：用户手动登录后同步计时器
-watch(
-  () => authStore.isAuthenticated,
-  async (isAuth, wasAuth) => {
-    if (isAuth && !wasAuth) {
-      await syncTimerWithServer()
-    }
-  }
-)
 </script>
 
 <style>
